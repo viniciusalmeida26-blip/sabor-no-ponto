@@ -8,6 +8,7 @@ import {
   rotuloForma,
   rotuloStatus,
   totalPedido,
+  ehMarmita,
   type StatusPedido,
 } from "@/lib/store"
 import {
@@ -17,6 +18,7 @@ import {
   Clock,
   ChefHat,
   CheckCircle2,
+  UtensilsCrossed,
 } from "lucide-react"
 
 const statusInfo: Record<
@@ -58,6 +60,22 @@ export default function VendasPage() {
     [vendasHoje],
   )
 
+  const totalMarmitasHoje = useMemo(
+    () =>
+      vendasHoje
+        .filter((v) => ehMarmita(v.descricao))
+        .reduce((s, v) => s + v.quantidade * v.valorUnitario, 0),
+    [vendasHoje],
+  )
+
+  const qtdMarmitasHoje = useMemo(
+    () =>
+      vendasHoje
+        .filter((v) => ehMarmita(v.descricao))
+        .reduce((s, v) => s + v.quantidade, 0),
+    [vendasHoje],
+  )
+
   const pedidosHoje = useMemo(
     () => pedidos.filter((p) => ehHoje(p.data)),
     [pedidos],
@@ -88,6 +106,25 @@ export default function VendasPage() {
           <h2 className="text-sm font-semibold text-foreground">
             Vendas de hoje
           </h2>
+
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+              <UtensilsCrossed className="size-5" aria-hidden="true" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-muted-foreground">
+                Total só de marmitas hoje
+              </p>
+              <p className="text-lg font-bold text-foreground">
+                {formatarBRL(totalMarmitasHoje)}
+              </p>
+            </div>
+            <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+              {qtdMarmitasHoje}{" "}
+              {qtdMarmitasHoje === 1 ? "marmita" : "marmitas"}
+            </span>
+          </div>
+
           {vendasHoje.length === 0 ? (
             <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-card py-10 text-center">
               <ShoppingCart

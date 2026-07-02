@@ -23,7 +23,12 @@ export default function LoginPage() {
       setErro("Preencha e-mail e senha para entrar.")
       return
     }
-    login(email.trim())
+    const ok = login(email.trim(), senha)
+    if (!ok) {
+      setErro("E-mail ou senha incorretos.")
+      return
+    }
+    setErro("")
     router.replace("/vendas")
   }
 
@@ -101,7 +106,7 @@ export default function LoginPage() {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="voce@saborponto.com.br"
+                placeholder="davi.oliveira03@escola.pr.gov.br"
                 className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none ring-ring/50 transition focus:border-ring focus:ring-2"
               />
             </div>
@@ -138,8 +143,7 @@ export default function LoginPage() {
           </div>
 
           <p className="mt-4 text-center text-xs text-muted-foreground text-pretty">
-            Protótipo de demonstração — use qualquer e-mail e senha para
-            acessar.
+            Acesso restrito ao responsável cadastrado.
           </p>
         </div>
       </div>

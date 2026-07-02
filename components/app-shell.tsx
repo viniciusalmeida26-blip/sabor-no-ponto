@@ -11,12 +11,16 @@ import {
   BarChart3,
   LogOut,
   ClipboardList,
+  CalendarDays,
+  Settings,
 } from "lucide-react"
 
 const navItems = [
   { href: "/vendas", label: "Vendas", icon: ShoppingCart },
   { href: "/pedidos", label: "Pedidos", icon: ClipboardList },
+  { href: "/calendario", label: "Calendário", icon: CalendarDays },
   { href: "/relatorios", label: "Relatórios", icon: BarChart3 },
+  { href: "/configuracoes", label: "Config", icon: Settings },
 ]
 
 export function AppShell({ children }: { children: ReactNode }) {

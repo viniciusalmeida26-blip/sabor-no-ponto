@@ -56,6 +56,14 @@ export function totalPedido(itens: ItemPedido[]) {
   return itens.reduce((soma, i) => soma + i.preco * i.quantidade, 0)
 }
 
+// Considera marmita qualquer produto do catálogo com categoria "marmita"
+// ou cuja descrição comece com "Marmita".
+export function ehMarmita(descricao: string) {
+  const noCatalogo = produtos.find((p) => p.nome === descricao)
+  if (noCatalogo) return noCatalogo.categoria === "marmita"
+  return descricao.trim().toLowerCase().startsWith("marmita")
+}
+
 export type Pedido = {
   id: string
   cliente: string
@@ -72,13 +80,18 @@ type Usuario = {
   email: string
 }
 
+// Credenciais fixas de acesso.
+export const CREDENCIAL_EMAIL = "davi.oliveira03@escola.pr.gov.br"
+export const CREDENCIAL_SENHA = "davi(10)"
+const CREDENCIAL_NOME = "Davi Oliveira"
+
 type StoreContextType = {
   usuario: Usuario | null
   vendas: Venda[]
   despesas: Despesa[]
   pedidos: Pedido[]
   hidratado: boolean
-  login: (email: string, nome?: string) => void
+  login: (email: string, senha: string) => boolean
   logout: () => void
   addVenda: (v: Omit<Venda, "id" | "data">) => void
   removeVenda: (id: string) => void
@@ -112,67 +125,12 @@ function ler<T>(chave: string, padrao: T): T {
   }
 }
 
-const vendasIniciais: Venda[] = [
-  {
-    id: gerarId(),
-    descricao: "Marmita Média",
-    quantidade: 3,
-    valorUnitario: 18,
-    forma: "pix",
-    data: new Date().toISOString(),
-  },
-  {
-    id: gerarId(),
-    descricao: "Marmita Grande",
-    quantidade: 2,
-    valorUnitario: 22,
-    forma: "cartao",
-    data: new Date().toISOString(),
-  },
-  {
-    id: gerarId(),
-    descricao: "Marmita Pequena",
-    quantidade: 4,
-    valorUnitario: 15,
-    forma: "dinheiro",
-    data: new Date().toISOString(),
-  },
-]
-
-const despesasIniciais: Despesa[] = [
-  {
-    id: gerarId(),
-    descricao: "Compra de ingredientes",
-    valor: 85,
-    data: new Date().toISOString(),
-  },
-]
-
-const pedidosIniciais: Pedido[] = [
-  {
-    id: gerarId(),
-    cliente: "Ana Souza",
-    itens: [
-      { descricao: "Marmita G", quantidade: 2, preco: 25 },
-      { descricao: "Refrigerante Lata", quantidade: 1, preco: 6 },
-    ],
-    observacao: "Sem cebola, por favor.",
-    forma: "pix",
-    status: "pendente",
-    vendaRegistrada: false,
-    data: new Date().toISOString(),
-  },
-  {
-    id: gerarId(),
-    cliente: "Carlos Lima",
-    itens: [{ descricao: "Marmita M", quantidade: 1, preco: 18 }],
-    observacao: "",
-    forma: "dinheiro",
-    status: "preparando",
-    vendaRegistrada: false,
-    data: new Date().toISOString(),
-  },
-]
+// Dados reais persistidos em localStorage. Iniciam vazios: os registros
+// são criados conforme o uso e mantidos entre sessões. O filtro por data
+// nas telas garante que cada dia mostre apenas seus próprios registros.
+const vendasIniciais: Venda[] = []
+const despesasIniciais: Despesa[] = []
+const pedidosIniciais: Pedido[] = []
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [usuario, setUsuario] = useState<Usuario | null>(null)
@@ -203,10 +161,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       window.localStorage.setItem(CHAVE_PEDIDOS, JSON.stringify(pedidos))
   }, [pedidos, hidratado])
 
-  function login(email: string, nome?: string) {
-    const u = { email, nome: nome || email.split("@")[0] }
+  function login(email: string, senha: string) {
+    const emailValido =
+      email.trim().toLowerCase() === CREDENCIAL_EMAIL.toLowerCase()
+    const senhaValida = senha === CREDENCIAL_SENHA
+    if (!emailValido || !senhaValida) return false
+    const u = { email: CREDENCIAL_EMAIL, nome: CREDENCIAL_NOME }
     setUsuario(u)
     window.localStorage.setItem(CHAVE_USUARIO, JSON.stringify(u))
+    return true
   }
 
   function logout() {
@@ -333,4 +296,22 @@ export const rotuloStatus: Record<StatusPedido, string> = {
   pendente: "Pendente",
   preparando: "Preparando",
   entregue: "Entregue",
+}
+
+// Chave "AAAA-MM-DD" no fuso local, usada para agrupar registros por dia.
+export function chaveDia(iso: string) {
+  const d = new Date(iso)
+  const ano = d.getFullYear()
+  const mes = String(d.getMonth() + 1).padStart(2, "0")
+  const dia = String(d.getDate()).padStart(2, "0")
+  return `${ano}-${mes}-${dia}`
+}
+
+export function mesmaData(iso: string, ref: Date) {
+  const d = new Date(iso)
+  return (
+    d.getDate() === ref.getDate() &&
+    d.getMonth() === ref.getMonth() &&
+    d.getFullYear() === ref.getFullYear()
+  )
 }

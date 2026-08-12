@@ -1,7 +1,8 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { AppShell } from "@/components/app-shell"
+import { Button } from "@/components/ui/button"
 import {
   useStore,
   formatarBRL,
@@ -9,7 +10,9 @@ import {
   rotuloStatus,
   totalPedido,
   ehMarmita,
+  produtos,
   type StatusPedido,
+  type FormaPagamento,
 } from "@/lib/store"
 import {
   Trash2,
@@ -19,6 +22,12 @@ import {
   ChefHat,
   CheckCircle2,
   UtensilsCrossed,
+  CupSoda,
+  Plus,
+  Minus,
+  Banknote,
+  CreditCard,
+  QrCode,
 } from "lucide-react"
 
 const statusInfo: Record<
@@ -29,6 +38,16 @@ const statusInfo: Record<
   preparando: { icon: ChefHat, classe: "bg-accent text-accent-foreground" },
   entregue: { icon: CheckCircle2, classe: "bg-primary/15 text-primary" },
 }
+
+const formas: { valor: FormaPagamento; label: string; icon: typeof Banknote }[] =
+  [
+    { valor: "dinheiro", label: "Dinheiro", icon: Banknote },
+    { valor: "cartao", label: "Cartão", icon: CreditCard },
+    { valor: "pix", label: "Pix", icon: QrCode },
+  ]
+
+const marmitas = produtos.filter((p) => p.categoria === "marmita")
+const bebidas = produtos.filter((p) => p.categoria === "bebida")
 
 function ehHoje(iso: string) {
   const d = new Date(iso)
@@ -48,7 +67,48 @@ function horaFormatada(iso: string) {
 }
 
 export default function VendasPage() {
-  const { vendas, pedidos, removeVenda } = useStore()
+  const { vendas, pedidos, addVenda, removeVenda } = useStore()
+
+  const [forma, setForma] = useState<FormaPagamento>("dinheiro")
+  const [quantidades, setQuantidades] = useState<Record<string, number>>({})
+
+  const totalAtual = useMemo(
+    () =>
+      produtos.reduce(
+        (soma, p) => soma + p.preco * (quantidades[p.nome] || 0),
+        0,
+      ),
+    [quantidades],
+  )
+
+  const temItens = useMemo(
+    () => produtos.some((p) => (quantidades[p.nome] || 0) > 0),
+    [quantidades],
+  )
+
+  function ajustar(nome: string, delta: number) {
+    setQuantidades((atual) => ({
+      ...atual,
+      [nome]: Math.max(0, (atual[nome] || 0) + delta),
+    }))
+  }
+
+  function registrarVenda(e: React.FormEvent) {
+    e.preventDefault()
+    const itens = produtos.filter((p) => (quantidades[p.nome] || 0) > 0)
+    if (itens.length === 0) return
+    // Cada produto vira uma venda no banco.
+    for (const p of itens) {
+      addVenda({
+        descricao: p.nome,
+        quantidade: quantidades[p.nome],
+        valorUnitario: p.preco,
+        forma,
+      })
+    }
+    setQuantidades({})
+    setForma("dinheiro")
+  }
 
   const vendasHoje = useMemo(
     () => vendas.filter((v) => ehHoje(v.data)),
@@ -81,6 +141,44 @@ export default function VendasPage() {
     [pedidos],
   )
 
+  function CartaoProduto({ nome, preco }: { nome: string; preco: number }) {
+    return (
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background p-3">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-foreground">{nome}</p>
+          <p className="text-xs text-muted-foreground">
+            {formatarBRL(preco)} cada
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => ajustar(nome, -1)}
+            disabled={(quantidades[nome] || 0) === 0}
+            className="flex size-8 items-center justify-center rounded-md border border-input text-foreground transition hover:bg-muted disabled:pointer-events-none disabled:opacity-40"
+            aria-label={`Diminuir ${nome}`}
+          >
+            <Minus className="size-4" aria-hidden="true" />
+          </button>
+          <span
+            className="w-6 text-center text-sm font-semibold tabular-nums text-foreground"
+            aria-live="polite"
+          >
+            {quantidades[nome] || 0}
+          </span>
+          <button
+            type="button"
+            onClick={() => ajustar(nome, 1)}
+            className="flex size-8 items-center justify-center rounded-md border border-input text-foreground transition hover:bg-muted"
+            aria-label={`Aumentar ${nome}`}
+          >
+            <Plus className="size-4" aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <AppShell>
       <div className="flex flex-col gap-6">
@@ -89,7 +187,7 @@ export default function VendasPage() {
             Registro de Vendas
           </h1>
           <p className="text-sm text-muted-foreground">
-            Acompanhe as vendas e o registro diário dos pedidos.
+            Registre vendas rápidas e acompanhe o resumo diário.
           </p>
         </div>
 
@@ -101,6 +199,81 @@ export default function VendasPage() {
             {vendasHoje.length === 1 ? "venda registrada" : "vendas registradas"}
           </p>
         </div>
+
+        <form
+          onSubmit={registrarVenda}
+          className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5 shadow-sm"
+        >
+          <h2 className="text-sm font-semibold text-foreground">
+            Registrar venda rápida
+          </h2>
+
+          <div className="flex flex-col gap-2">
+            <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+              <UtensilsCrossed
+                className="size-4 text-muted-foreground"
+                aria-hidden="true"
+              />
+              Marmitas
+            </span>
+            {marmitas.map((p) => (
+              <CartaoProduto key={p.nome} nome={p.nome} preco={p.preco} />
+            ))}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+              <CupSoda
+                className="size-4 text-muted-foreground"
+                aria-hidden="true"
+              />
+              Bebidas
+            </span>
+            {bebidas.map((p) => (
+              <CartaoProduto key={p.nome} nome={p.nome} preco={p.preco} />
+            ))}
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium text-foreground">
+              Forma de pagamento
+            </span>
+            <div className="grid grid-cols-3 gap-2">
+              {formas.map((f) => {
+                const Icon = f.icon
+                const ativo = forma === f.valor
+                return (
+                  <button
+                    key={f.valor}
+                    type="button"
+                    onClick={() => setForma(f.valor)}
+                    className={`flex flex-col items-center gap-1 rounded-lg border px-2 py-3 text-xs font-medium transition ${
+                      ativo
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-input bg-background text-muted-foreground hover:border-ring"
+                    }`}
+                    aria-pressed={ativo}
+                  >
+                    <Icon className="size-5" aria-hidden="true" />
+                    {f.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg bg-muted px-3 py-2.5">
+            <span className="text-sm font-medium text-foreground">Total</span>
+            <span className="text-base font-bold text-primary">
+              {formatarBRL(totalAtual)}
+            </span>
+          </div>
+
+          <Button type="submit" size="lg" className="w-full" disabled={!temItens}>
+            <Plus className="size-4" aria-hidden="true" />
+            Registrar venda
+          </Button>
+        </form>
 
         <div className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold text-foreground">

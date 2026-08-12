@@ -4,9 +4,9 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
+import { EmailAvatar } from "@/components/email-avatar"
 import { useStore } from "@/lib/store"
 import {
-  User,
   LogOut,
   RefreshCw,
   HelpCircle,
@@ -84,9 +84,11 @@ export default function ConfiguracoesPage() {
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold text-foreground">Conta</h2>
           <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-              <User className="size-6" aria-hidden="true" />
-            </div>
+            <EmailAvatar
+              email={usuario?.email || ""}
+              nome={usuario?.nome}
+              size={48}
+            />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">
                 {usuario?.nome}

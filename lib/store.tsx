@@ -7,6 +7,16 @@ import {
   useState,
   type ReactNode,
 } from "react"
+import {
+  carregarDados,
+  criarVenda,
+  excluirVenda,
+  criarDespesa,
+  excluirDespesa,
+  criarPedido,
+  excluirPedido,
+  mudarStatusPedido,
+} from "@/app/actions/dados"
 
 export type FormaPagamento = "dinheiro" | "cartao" | "pix"
 
@@ -107,13 +117,6 @@ type StoreContextType = {
 const StoreContext = createContext<StoreContextType | null>(null)
 
 const CHAVE_USUARIO = "snp_usuario"
-const CHAVE_VENDAS = "snp_vendas"
-const CHAVE_DESPESAS = "snp_despesas"
-const CHAVE_PEDIDOS = "snp_pedidos"
-
-function gerarId() {
-  return Math.random().toString(36).slice(2) + Date.now().toString(36)
-}
 
 function ler<T>(chave: string, padrao: T): T {
   if (typeof window === "undefined") return padrao
@@ -125,13 +128,6 @@ function ler<T>(chave: string, padrao: T): T {
   }
 }
 
-// Dados reais persistidos em localStorage. Iniciam vazios: os registros
-// são criados conforme o uso e mantidos entre sessões. O filtro por data
-// nas telas garante que cada dia mostre apenas seus próprios registros.
-const vendasIniciais: Venda[] = []
-const despesasIniciais: Despesa[] = []
-const pedidosIniciais: Pedido[] = []
-
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [usuario, setUsuario] = useState<Usuario | null>(null)
   const [vendas, setVendas] = useState<Venda[]>([])
@@ -139,27 +135,40 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [pedidos, setPedidos] = useState<Pedido[]>([])
   const [hidratado, setHidratado] = useState(false)
 
+  // Sessão (login fixo) fica no dispositivo; os dados vêm do banco.
   useEffect(() => {
     setUsuario(ler<Usuario | null>(CHAVE_USUARIO, null))
-    setVendas(ler<Venda[]>(CHAVE_VENDAS, vendasIniciais))
-    setDespesas(ler<Despesa[]>(CHAVE_DESPESAS, despesasIniciais))
-    setPedidos(ler<Pedido[]>(CHAVE_PEDIDOS, pedidosIniciais))
-    setHidratado(true)
   }, [])
 
+  // Carrega os registros do banco (compartilhados entre todos os
+  // dispositivos e sessões) sempre que houver um usuário logado.
   useEffect(() => {
-    if (hidratado) window.localStorage.setItem(CHAVE_VENDAS, JSON.stringify(vendas))
-  }, [vendas, hidratado])
-
-  useEffect(() => {
-    if (hidratado)
-      window.localStorage.setItem(CHAVE_DESPESAS, JSON.stringify(despesas))
-  }, [despesas, hidratado])
-
-  useEffect(() => {
-    if (hidratado)
-      window.localStorage.setItem(CHAVE_PEDIDOS, JSON.stringify(pedidos))
-  }, [pedidos, hidratado])
+    let ativo = true
+    if (!usuario) {
+      setVendas([])
+      setDespesas([])
+      setPedidos([])
+      setHidratado(true)
+      return
+    }
+    setHidratado(false)
+    carregarDados()
+      .then((dados) => {
+        if (!ativo) return
+        setVendas(dados.vendas)
+        setDespesas(dados.despesas)
+        setPedidos(dados.pedidos)
+      })
+      .catch((e) => {
+        console.log("[v0] erro ao carregar dados:", e)
+      })
+      .finally(() => {
+        if (ativo) setHidratado(true)
+      })
+    return () => {
+      ativo = false
+    }
+  }, [usuario])
 
   function login(email: string, senha: string) {
     const emailValido =
@@ -177,64 +186,64 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     window.localStorage.removeItem(CHAVE_USUARIO)
   }
 
-  function addVenda(v: Omit<Venda, "id" | "data">) {
-    setVendas((atual) => [
-      { ...v, id: gerarId(), data: new Date().toISOString() },
-      ...atual,
-    ])
+  async function addVenda(v: Omit<Venda, "id" | "data">) {
+    try {
+      const nova = await criarVenda(v)
+      setVendas((atual) => [nova, ...atual])
+    } catch (e) {
+      console.log("[v0] erro ao criar venda:", e)
+    }
   }
 
-  function removeVenda(id: string) {
+  async function removeVenda(id: string) {
     setVendas((atual) => atual.filter((v) => v.id !== id))
+    try {
+      await excluirVenda(id)
+    } catch (e) {
+      console.log("[v0] erro ao excluir venda:", e)
+    }
   }
 
-  function addDespesa(d: Omit<Despesa, "id" | "data">) {
-    setDespesas((atual) => [
-      { ...d, id: gerarId(), data: new Date().toISOString() },
-      ...atual,
-    ])
+  async function addDespesa(d: Omit<Despesa, "id" | "data">) {
+    try {
+      const nova = await criarDespesa(d)
+      setDespesas((atual) => [nova, ...atual])
+    } catch (e) {
+      console.log("[v0] erro ao criar despesa:", e)
+    }
   }
 
-  function removeDespesa(id: string) {
+  async function removeDespesa(id: string) {
     setDespesas((atual) => atual.filter((d) => d.id !== id))
+    try {
+      await excluirDespesa(id)
+    } catch (e) {
+      console.log("[v0] erro ao excluir despesa:", e)
+    }
   }
 
-  function addPedido(
+  async function addPedido(
     p: Omit<Pedido, "id" | "data" | "status" | "vendaRegistrada">,
   ) {
-    setPedidos((atual) => [
-      {
-        ...p,
-        id: gerarId(),
-        status: "pendente",
-        vendaRegistrada: false,
-        data: new Date().toISOString(),
-      },
-      ...atual,
-    ])
-  }
-
-  function removePedido(id: string) {
-    setPedidos((atual) => atual.filter((p) => p.id !== id))
-  }
-
-  function atualizarStatusPedido(id: string, status: StatusPedido) {
-    const pedido = pedidos.find((p) => p.id === id)
-    if (!pedido) return
-
-    // Ao entregar, registra as vendas do pedido uma única vez.
-    if (status === "entregue" && !pedido.vendaRegistrada) {
-      const novasVendas: Venda[] = pedido.itens.map((item) => ({
-        id: gerarId(),
-        descricao: item.descricao,
-        quantidade: item.quantidade,
-        valorUnitario: item.preco,
-        forma: pedido.forma,
-        data: new Date().toISOString(),
-      }))
-      setVendas((atual) => [...novasVendas, ...atual])
+    try {
+      const novo = await criarPedido(p)
+      setPedidos((atual) => [novo, ...atual])
+    } catch (e) {
+      console.log("[v0] erro ao criar pedido:", e)
     }
+  }
 
+  async function removePedido(id: string) {
+    setPedidos((atual) => atual.filter((p) => p.id !== id))
+    try {
+      await excluirPedido(id)
+    } catch (e) {
+      console.log("[v0] erro ao excluir pedido:", e)
+    }
+  }
+
+  async function atualizarStatusPedido(id: string, status: StatusPedido) {
+    // Atualiza o status na tela imediatamente.
     setPedidos((atual) =>
       atual.map((p) =>
         p.id === id
@@ -247,6 +256,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           : p,
       ),
     )
+    try {
+      const { vendasNovas } = await mudarStatusPedido(id, status)
+      if (vendasNovas.length > 0) {
+        setVendas((atual) => [...vendasNovas, ...atual])
+      }
+    } catch (e) {
+      console.log("[v0] erro ao atualizar status do pedido:", e)
+    }
   }
 
   return (

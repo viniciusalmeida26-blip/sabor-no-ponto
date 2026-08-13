@@ -5,22 +5,23 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
+import { EmailAvatar } from "@/components/email-avatar"
 import {
-  UtensilsCrossed,
-  ShoppingCart,
-  BarChart3,
-  LogOut,
-  ClipboardList,
+  ChefHat,
+  Soup,
+  HandPlatter,
   CalendarDays,
-  Settings,
+  Receipt,
+  CookingPot,
+  LogOut,
 } from "lucide-react"
 
 const navItems = [
-  { href: "/vendas", label: "Vendas", icon: ShoppingCart },
-  { href: "/pedidos", label: "Pedidos", icon: ClipboardList },
+  { href: "/vendas", label: "Vendas", icon: Soup },
+  { href: "/pedidos", label: "Pedidos", icon: HandPlatter },
   { href: "/calendario", label: "Calendário", icon: CalendarDays },
-  { href: "/relatorios", label: "Relatórios", icon: BarChart3 },
-  { href: "/configuracoes", label: "Config", icon: Settings },
+  { href: "/relatorios", label: "Relatórios", icon: Receipt },
+  { href: "/configuracoes", label: "Config", icon: CookingPot },
 ]
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -53,7 +54,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-2">
             <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <UtensilsCrossed className="size-5" aria-hidden="true" />
+              <ChefHat className="size-5" aria-hidden="true" />
             </div>
             <div className="leading-tight">
               <p className="text-sm font-bold text-foreground">Sabor no Ponto</p>
@@ -62,17 +63,25 @@ export function AppShell({ children }: { children: ReactNode }) {
               </p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              logout()
-              router.replace("/")
-            }}
-          >
-            <LogOut className="size-4" aria-hidden="true" />
-            <span className="sr-only sm:not-sr-only">Sair</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <EmailAvatar
+              email={usuario.email}
+              nome={usuario.nome}
+              size={36}
+              className="ring-2 ring-border"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                logout()
+                router.replace("/")
+              }}
+            >
+              <LogOut className="size-4" aria-hidden="true" />
+              <span className="sr-only sm:not-sr-only">Sair</span>
+            </Button>
+          </div>
         </div>
       </header>
 

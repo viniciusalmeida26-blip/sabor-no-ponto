@@ -3,15 +3,15 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { AppShell } from "@/components/app-shell"
-import { Button } from "@/components/ui/button"
+import { EmailAvatar } from "@/components/email-avatar"
 import { useStore } from "@/lib/store"
 import {
-  User,
   LogOut,
   RefreshCw,
   HelpCircle,
   ChevronDown,
   Mail,
+  ChevronRight,
 } from "lucide-react"
 
 const ajudas = [
@@ -21,7 +21,7 @@ const ajudas = [
   },
   {
     p: "Os dados são salvos?",
-    r: "Sim. Os registros ficam salvos no aparelho e não são perdidos ao sair do site. Cada dia mostra apenas seus próprios registros, e o histórico completo fica no Calendário.",
+    r: "Sim. Os registros ficam salvos no banco de dados e não são perdidos ao sair do site, mesmo trocando de aparelho. Cada dia mostra apenas seus próprios registros, e o histórico completo fica no Calendário.",
   },
   {
     p: "O que acontece à meia-noite?",
@@ -36,11 +36,11 @@ const ajudas = [
 function ItemAjuda({ p, r }: { p: string; r: string }) {
   const [aberto, setAberto] = useState(false)
   return (
-    <div className="rounded-lg border border-border bg-background">
+    <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
       <button
         type="button"
         onClick={() => setAberto((a) => !a)}
-        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+        className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition hover:bg-muted/50"
         aria-expanded={aberto}
       >
         <span className="text-sm font-medium text-foreground">{p}</span>
@@ -52,7 +52,7 @@ function ItemAjuda({ p, r }: { p: string; r: string }) {
         />
       </button>
       {aberto && (
-        <p className="px-4 pb-3 text-sm leading-relaxed text-muted-foreground">
+        <p className="border-t border-border px-4 py-3 text-sm leading-relaxed text-muted-foreground">
           {r}
         </p>
       )}
@@ -69,6 +69,25 @@ export default function ConfiguracoesPage() {
     router.replace("/")
   }
 
+  const acoes = [
+    {
+      label: "Trocar de usuário",
+      descricao: "Sair e entrar com outra conta",
+      icon: RefreshCw,
+      classeIcone: "bg-accent text-accent-foreground",
+      classeTexto: "text-foreground",
+      onClick: sair,
+    },
+    {
+      label: "Sair da conta",
+      descricao: "Encerrar a sessão neste aparelho",
+      icon: LogOut,
+      classeIcone: "bg-destructive/10 text-destructive",
+      classeTexto: "text-destructive",
+      onClick: sair,
+    },
+  ]
+
   return (
     <AppShell>
       <div className="flex flex-col gap-6">
@@ -83,40 +102,55 @@ export default function ConfiguracoesPage() {
 
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold text-foreground">Conta</h2>
+
           <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-              <User className="size-6" aria-hidden="true" />
-            </div>
+            <EmailAvatar
+              email={usuario?.email || ""}
+              nome={usuario?.nome}
+              size={48}
+              className="ring-2 ring-border"
+            />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">
                 {usuario?.nome}
               </p>
               <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
-                <Mail className="size-3.5" aria-hidden="true" />
-                {usuario?.email}
+                <Mail className="size-3.5 shrink-0" aria-hidden="true" />
+                <span className="truncate">{usuario?.email}</span>
               </p>
             </div>
           </div>
 
           <div className="flex flex-col gap-2">
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-full justify-start"
-              onClick={sair}
-            >
-              <RefreshCw className="size-4" aria-hidden="true" />
-              Trocar de usuário
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-full justify-start text-destructive hover:text-destructive"
-              onClick={sair}
-            >
-              <LogOut className="size-4" aria-hidden="true" />
-              Sair da conta
-            </Button>
+            {acoes.map((a) => {
+              const Icon = a.icon
+              return (
+                <button
+                  key={a.label}
+                  type="button"
+                  onClick={a.onClick}
+                  className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 text-left shadow-sm transition hover:bg-muted/50"
+                >
+                  <span
+                    className={`flex size-11 shrink-0 items-center justify-center rounded-lg ${a.classeIcone}`}
+                  >
+                    <Icon className="size-5" aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-sm font-semibold ${a.classeTexto}`}>
+                      {a.label}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {a.descricao}
+                    </p>
+                  </div>
+                  <ChevronRight
+                    className="size-4 shrink-0 text-muted-foreground"
+                    aria-hidden="true"
+                  />
+                </button>
+              )
+            })}
           </div>
         </section>
 

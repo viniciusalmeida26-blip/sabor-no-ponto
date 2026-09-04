@@ -1,8 +1,9 @@
 "use client"
 
 import { AppShell } from "@/components/app-shell"
-import { formatarBRL } from "@/lib/store"
-import { Soup } from "lucide-react"
+import { formatarBRL, useStore, ehMarmita } from "@/lib/store"
+import { Soup, TrendingUp, UtensilsCrossed, BadgeDollarSign } from "lucide-react"
+import { useMemo } from "react"
 
 const cardapios = [
   { dia: "Domingo", mistura: "Frango assado com ervas", acompanhamentos: "Arroz, feijão, farofa e salada", valor: 20 },
@@ -15,7 +16,34 @@ const cardapios = [
 ]
 
 export default function VendasPage() {
-  const cardapio = cardapios[new Date().getDay()]
+  const { vendas } = useStore()
+  const hoje = new Date()
+  const vendasHoje = useMemo(
+    () =>
+      vendas.filter((venda) => {
+        const data = new Date(venda.data)
+        return (
+          data.getDate() === hoje.getDate() &&
+          data.getMonth() === hoje.getMonth() &&
+          data.getFullYear() === hoje.getFullYear()
+        )
+      }),
+    [vendas, hoje.getDate(), hoje.getMonth(), hoje.getFullYear()],
+  )
+  const vendasMarmitas = vendasHoje.filter((venda) => ehMarmita(venda.descricao))
+  const totalHoje = vendasHoje.reduce(
+    (total, venda) => total + venda.quantidade * venda.valorUnitario,
+    0,
+  )
+  const totalMarmitas = vendasMarmitas.reduce(
+    (total, venda) => total + venda.quantidade * venda.valorUnitario,
+    0,
+  )
+  const quantidadeMarmitas = vendasMarmitas.reduce(
+    (total, venda) => total + venda.quantidade,
+    0,
+  )
+  const cardapio = cardapios[hoje.getDay()]
 
   return (
     <AppShell>
@@ -24,6 +52,35 @@ export default function VendasPage() {
           <h1 className="text-xl font-bold tracking-tight text-foreground">Início</h1>
           <p className="text-sm text-muted-foreground">Confira o cardápio do dia.</p>
         </div>
+
+        <section aria-label="Resumo das vendas de hoje" className="grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-medium text-muted-foreground">Vendas de hoje</p>
+              <TrendingUp className="size-5 text-primary" aria-hidden="true" />
+            </div>
+            <p className="mt-2 text-2xl font-bold text-foreground">{formatarBRL(totalHoje)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{vendasHoje.length} registro(s)</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-medium text-muted-foreground">Venda só de marmitas</p>
+              <UtensilsCrossed className="size-5 text-primary" aria-hidden="true" />
+            </div>
+            <p className="mt-2 text-2xl font-bold text-foreground">{formatarBRL(totalMarmitas)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{quantidadeMarmitas} marmita(s)</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-medium text-muted-foreground">Ticket médio</p>
+              <BadgeDollarSign className="size-5 text-primary" aria-hidden="true" />
+            </div>
+            <p className="mt-2 text-2xl font-bold text-foreground">
+              {formatarBRL(vendasHoje.length ? totalHoje / vendasHoje.length : 0)}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">por registro de venda</p>
+          </div>
+        </section>
 
         <section className="relative min-h-[300px] overflow-hidden rounded-2xl border border-border bg-primary shadow-sm">
           <img src="/images/fundo-marmita.png" alt="Marmitas prontas com arroz, feijão, frango e salada" className="absolute inset-0 h-full w-full object-cover" />

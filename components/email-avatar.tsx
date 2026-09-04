@@ -18,12 +18,18 @@ type Props = {
  */
 export function EmailAvatar({ email, nome, size = 48, className = "" }: Props) {
   const [carregada, setCarregada] = useState(false)
+  const [tentativa, setTentativa] = useState<"google" | "gravatar">("google")
 
-  // Sempre que o e-mail mudar, volta a mostrar as iniciais até a nova foto
-  // carregar (evita "flash" branco enquanto o Gravatar responde).
+  // Primeiro tenta a foto pública do perfil Google/Gmail; depois usa Gravatar.
   useEffect(() => {
     setCarregada(false)
+    setTentativa("google")
   }, [email])
+
+  const fotoGoogle = email
+    ? `https://www.google.com/s2/photos/profile/${encodeURIComponent(email)}`
+    : ""
+  const foto = tentativa === "google" ? fotoGoogle : gravatarUrl(email, size * 2)
 
   return (
     <span
@@ -40,7 +46,7 @@ export function EmailAvatar({ email, nome, size = 48, className = "" }: Props) {
       </span>
       {email && (
         <img
-          src={gravatarUrl(email, size * 2) || "/placeholder.svg"}
+          src={foto || "/placeholder.svg"}
           alt={`Foto de ${nome || email}`}
           width={size}
           height={size}
@@ -49,7 +55,10 @@ export function EmailAvatar({ email, nome, size = 48, className = "" }: Props) {
             carregada ? "opacity-100" : "opacity-0"
           }`}
           onLoad={() => setCarregada(true)}
-          onError={() => setCarregada(false)}
+          onError={() => {
+            setCarregada(false)
+            if (tentativa === "google") setTentativa("gravatar")
+          }}
         />
       )}
     </span>

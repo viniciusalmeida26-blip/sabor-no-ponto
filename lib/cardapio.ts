@@ -24,6 +24,14 @@ export function cardapioDaChave(chave: string) {
   return cardapioDaData(new Date(ano, mes - 1, dia))
 }
 
+export function valoresMarmitas(valorBase: number) {
+  return {
+    P: valorBase - 3,
+    M: valorBase,
+    G: valorBase + 4,
+  }
+}
+
 export function formatarValorCardapio(valor: number) {
   return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 }

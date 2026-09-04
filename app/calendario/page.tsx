@@ -9,6 +9,7 @@ import {
   ehMarmita,
   type Venda,
 } from "@/lib/store"
+import { cardapios } from "@/lib/cardapio"
 import {
   ChevronLeft,
   ChevronRight,
@@ -189,6 +190,30 @@ export default function CalendarioPage() {
             })}
           </div>
         </div>
+
+        <section className="flex flex-col gap-3" aria-label="Cardápio da semana">
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">Cardápio da semana</h2>
+            <p className="text-xs text-muted-foreground">Cada dia tem uma marmita completa, sem escolhas.</p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {cardapios.map((cardapio, indice) => {
+              const dataDoDia = new Date(anoAtual, mesAtual, 1)
+              const diferenca = (indice - dataDoDia.getDay() + 7) % 7
+              dataDoDia.setDate(1 + diferenca)
+              const chave = chaveDeData(dataDoDia.getFullYear(), dataDoDia.getMonth(), dataDoDia.getDate())
+              const selecionado = diaSelecionado === chave
+              return (
+                <button key={cardapio.dia} type="button" onClick={() => setDiaSelecionado(chave)} className={`flex flex-col gap-1 rounded-xl border p-4 text-left shadow-sm transition ${selecionado ? "border-primary bg-primary/10" : "border-border bg-card hover:border-primary/50"}`}>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-primary">{cardapio.dia}</span>
+                  <span className="font-semibold text-foreground">Marmita de {cardapio.mistura}</span>
+                  <span className="text-xs leading-5 text-muted-foreground">{cardapio.acompanhamentos}</span>
+                  <span className="mt-1 text-sm font-bold text-foreground">{formatarBRL(cardapio.valor)}</span>
+                </button>
+              )
+            })}
+          </div>
+        </section>
 
         <div className="flex items-center gap-3 rounded-xl border border-border bg-primary p-4 text-primary-foreground shadow-sm">
           <CalendarDays className="size-8" aria-hidden="true" />

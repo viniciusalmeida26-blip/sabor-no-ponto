@@ -38,22 +38,26 @@ export type Despesa = {
 
 export type StatusPedido = "pendente" | "preparando" | "entregue"
 
-export type CategoriaProduto = "marmita" | "bebida"
+export type CategoriaProduto = "marmita" | "bebida" | "sobremesa" | "fitness"
 
 export type Produto = {
+  id: string
   nome: string
+  descricao: string
   preco: number
   categoria: CategoriaProduto
+  imagem: string
+  disponivel: boolean
 }
 
 // Catálogo com preços fixos usado nas páginas de Pedidos e Vendas.
 export const produtos: Produto[] = [
-  { nome: "Marmita P", preco: 15, categoria: "marmita" },
-  { nome: "Marmita M", preco: 18, categoria: "marmita" },
-  { nome: "Marmita G", preco: 25, categoria: "marmita" },
-  { nome: "Refrigerante Lata", preco: 6, categoria: "bebida" },
-  { nome: "Suco Natural", preco: 8, categoria: "bebida" },
-  { nome: "Água Mineral", preco: 4, categoria: "bebida" },
+  { id: "marmita-p", nome: "Marmita P", descricao: "Arroz, feijão e mistura do dia", preco: 15, categoria: "marmita", imagem: "/images/fundo-marmita.png", disponivel: true },
+  { id: "marmita-m", nome: "Marmita M", descricao: "Arroz, feijão e mistura do dia", preco: 18, categoria: "marmita", imagem: "/images/fundo-marmita.png", disponivel: true },
+  { id: "marmita-g", nome: "Marmita G", descricao: "Arroz, feijão e mistura do dia", preco: 25, categoria: "marmita", imagem: "/images/fundo-marmita.png", disponivel: true },
+  { id: "refrigerante-lata", nome: "Refrigerante Lata", descricao: "Refrigerante gelado", preco: 6, categoria: "bebida", imagem: "", disponivel: true },
+  { id: "suco-natural", nome: "Suco Natural", descricao: "Suco natural da casa", preco: 8, categoria: "bebida", imagem: "", disponivel: true },
+  { id: "agua-mineral", nome: "Água Mineral", descricao: "Água mineral sem gás", preco: 4, categoria: "bebida", imagem: "", disponivel: true },
 ]
 
 export type ItemPedido = {
@@ -100,6 +104,8 @@ type StoreContextType = {
   vendas: Venda[]
   despesas: Despesa[]
   pedidos: Pedido[]
+  produtos: Produto[]
+  atualizarProduto: (produto: Produto) => void
   hidratado: boolean
   login: (email: string, senha: string) => boolean
   logout: () => void
@@ -133,12 +139,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [vendas, setVendas] = useState<Venda[]>([])
   const [despesas, setDespesas] = useState<Despesa[]>([])
   const [pedidos, setPedidos] = useState<Pedido[]>([])
+  const [catalogo, setCatalogo] = useState<Produto[]>(produtos)
   const [hidratado, setHidratado] = useState(false)
 
   // Sessão (login fixo) fica no dispositivo; os dados vêm do banco.
   useEffect(() => {
     setUsuario(ler<Usuario | null>(CHAVE_USUARIO, null))
+    setCatalogo(ler<Produto[]>("snp_catalogo", produtos))
   }, [])
+
+  function atualizarProduto(produto: Produto) {
+    setCatalogo((atual) => {
+      const novo = atual.map((item) => item.id === produto.id ? produto : item)
+      window.localStorage.setItem("snp_catalogo", JSON.stringify(novo))
+      return novo
+    })
+  }
 
   // Carrega os registros do banco (compartilhados entre todos os
   // dispositivos e sessões) sempre que houver um usuário logado.
@@ -273,6 +289,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         vendas,
         despesas,
         pedidos,
+        produtos: catalogo,
+        atualizarProduto,
         hidratado,
         login,
         logout,

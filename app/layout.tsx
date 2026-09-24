@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 import { StoreProvider } from '@/lib/store'
+import { Toaster } from '@/components/ui/sonner'
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
 const geistMono = Geist_Mono({
@@ -54,6 +55,7 @@ export default function RootLayout({
     >
       <body className="font-sans antialiased">
         <StoreProvider>{children}</StoreProvider>
+        <Toaster richColors position="top-center" />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

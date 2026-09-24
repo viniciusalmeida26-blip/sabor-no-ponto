@@ -13,6 +13,7 @@ import {
   CalendarDays,
   Receipt,
   CookingPot,
+  ClipboardPenLine,
   LogOut,
 } from "lucide-react"
 
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/calendario", label: "Calendário", icon: CalendarDays },
   { href: "/relatorios", label: "Relatórios", icon: Receipt },
   { href: "/configuracoes", label: "Config", icon: CookingPot },
+  { href: "/gerenciamento-cardapio", label: "Cardápio", icon: ClipboardPenLine },
 ]
 
 export function AppShell({ children }: { children: ReactNode }) {

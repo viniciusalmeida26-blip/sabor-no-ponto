@@ -29,7 +29,7 @@ export default function LoginPage() {
       return
     }
     setErro("")
-    router.push("/vendas")
+    window.location.assign("/vendas")
   }
 
   return (

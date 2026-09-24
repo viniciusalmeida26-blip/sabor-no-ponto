@@ -4,6 +4,15 @@ import { useMemo, useState } from "react"
 import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import {
   useStore,
   rotuloStatus,
   rotuloForma,
@@ -26,6 +35,12 @@ import {
   QrCode,
   UtensilsCrossed,
   CupSoda,
+  MapPin,
+  Play,
+  Send,
+  PackageCheck,
+  RefreshCw,
+  AlertTriangle,
 } from "lucide-react"
 
 const statusInfo: {
@@ -38,19 +53,19 @@ const statusInfo: {
     valor: "pendente",
     label: "Pendente",
     icon: Clock,
-    classe: "bg-muted text-muted-foreground",
+    classe: "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200",
   },
   {
     valor: "preparando",
     label: "Preparando",
     icon: ChefHat,
-    classe: "bg-accent text-accent-foreground",
+    classe: "border-violet-200 bg-violet-50 text-violet-800 dark:border-violet-900/60 dark:bg-violet-950/30 dark:text-violet-200",
   },
   {
     valor: "entregue",
     label: "Entregue",
     icon: CheckCircle2,
-    classe: "bg-primary/15 text-primary",
+    classe: "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200",
   },
 ]
 
@@ -72,15 +87,28 @@ const marmitas = produtos.filter((p) => p.categoria === "marmita")
 const bebidas = produtos.filter((p) => p.categoria === "bebida")
 
 export default function PedidosPage() {
-  const { pedidos, addPedido, removePedido, atualizarStatusPedido } = useStore()
+  const {
+    pedidos,
+    addPedido,
+    removePedido,
+    atualizarStatusPedido,
+    ultimoResetPedidos,
+    resetarPedidosEntregues,
+  } = useStore()
 
   const [cliente, setCliente] = useState("")
+  const [dialogResetAberto, setDialogResetAberto] = useState(false)
+  const [resetando, setResetando] = useState(false)
   const [observacao, setObservacao] = useState("")
   const [forma, setForma] = useState<FormaPagamento>("dinheiro")
   const [quantidades, setQuantidades] = useState<Record<string, number>>({})
 
-  const pedidosAtivos = useMemo(
-    () => pedidos.filter((p) => p.status !== "entregue"),
+  const pedidosPorStatus = useMemo(
+    () =>
+      statusInfo.map((status) => ({
+        ...status,
+        pedidos: pedidos.filter((pedido) => pedido.status === status.valor),
+      })),
     [pedidos],
   )
 
@@ -120,6 +148,16 @@ export default function PedidosPage() {
     setObservacao("")
     setForma("dinheiro")
     setQuantidades({})
+  }
+
+  async function confirmarReset() {
+    setResetando(true)
+    try {
+      await resetarPedidosEntregues()
+      setDialogResetAberto(false)
+    } finally {
+      setResetando(false)
+    }
   }
 
   function CartaoProduto({
@@ -178,6 +216,51 @@ export default function PedidosPage() {
             registrada automaticamente.
           </p>
         </div>
+
+        <section className="flex flex-col gap-4 rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between" aria-labelledby="reset-pedidos-title">
+          <div className="flex items-start gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <RefreshCw className="size-5" aria-hidden="true" />
+            </div>
+            <div>
+              <h2 id="reset-pedidos-title" className="text-sm font-semibold text-foreground">Fechamento diário</h2>
+              <p className="text-xs text-muted-foreground">
+                Pedidos entregues são mantidos nas vendas e retirados da fila após o reset.
+              </p>
+              <p className="mt-1 text-xs font-medium text-primary">
+                {ultimoResetPedidos
+                  ? `Último reset: ${new Date(ultimoResetPedidos).toLocaleString("pt-BR")}`
+                  : "Ainda não houve reset registrado"}
+              </p>
+            </div>
+          </div>
+          <Dialog open={dialogResetAberto} onOpenChange={setDialogResetAberto}>
+            <DialogTrigger asChild>
+              <Button type="button" variant="outline" className="shrink-0 border-primary/30 bg-background">
+                <RefreshCw className="size-4" aria-hidden="true" />
+                Resetar pedidos do dia
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <AlertTriangle className="size-5 text-primary" aria-hidden="true" />
+                  Confirmar reset diário
+                </DialogTitle>
+                <DialogDescription>
+                  Os pedidos entregues sairão da fila atual, mas suas vendas continuarão no histórico e nos relatórios. Pedidos pendentes e em preparo não serão alterados.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setDialogResetAberto(false)} disabled={resetando}>Cancelar</Button>
+                <Button type="button" onClick={confirmarReset} disabled={resetando}>
+                  <RefreshCw className={`size-4 ${resetando ? "animate-spin" : ""}`} aria-hidden="true" />
+                  {resetando ? "Resetando..." : "Confirmar reset"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </section>
 
         <form
           onSubmit={handleSubmit}
@@ -283,116 +366,106 @@ export default function PedidosPage() {
           </Button>
         </form>
 
-        <div className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold text-foreground">
-            Pedidos em andamento
-          </h2>
-          {pedidosAtivos.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-card py-10 text-center">
-              <ClipboardList
-                className="size-8 text-muted-foreground"
-                aria-hidden="true"
-              />
-              <p className="text-sm text-muted-foreground">
-                Nenhum pedido em andamento.
-              </p>
-            </div>
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {pedidosAtivos.map((p) => {
-                const info = statusInfo.find((s) => s.valor === p.status)!
-                const Icon = info.icon
-                return (
-                  <li
-                    key={p.id}
-                    className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-foreground">
-                          {p.cliente}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {horaFormatada(p.data)} · {rotuloForma[p.forma]}
-                        </p>
-                      </div>
-                      <span
-                        className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${info.classe}`}
-                      >
-                        <Icon className="size-3.5" aria-hidden="true" />
-                        {info.label}
-                      </span>
+        <section className="flex flex-col gap-4" aria-labelledby="kanban-title">
+          <div className="flex flex-col gap-1">
+            <h2 id="kanban-title" className="text-lg font-bold tracking-tight text-foreground">
+              Acompanhamento das entregas
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Organize a produção e avance cada pedido com um toque.
+            </p>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-3">
+            {pedidosPorStatus.map((coluna) => {
+              const StatusIcon = coluna.icon
+              return (
+                <section
+                  key={coluna.valor}
+                  className="flex min-h-64 flex-col gap-3 rounded-2xl border border-border bg-muted/30 p-3"
+                  aria-labelledby={`status-${coluna.valor}`}
+                >
+                  <div className={`flex items-center justify-between rounded-xl border px-3 py-2.5 ${coluna.classe}`}>
+                    <div className="flex items-center gap-2">
+                      <StatusIcon className="size-4" aria-hidden="true" />
+                      <h3 id={`status-${coluna.valor}`} className="text-sm font-semibold">
+                        {coluna.label}
+                      </h3>
                     </div>
+                    <span className="rounded-full bg-background/70 px-2 py-0.5 text-xs font-bold tabular-nums">
+                      {coluna.pedidos.length}
+                    </span>
+                  </div>
 
-                    <ul className="flex flex-col gap-1 border-y border-border py-2">
-                      {p.itens.map((item, i) => (
-                        <li
-                          key={i}
-                          className="flex items-center justify-between text-sm text-foreground"
-                        >
-                          <span className="truncate">
-                            {item.descricao} × {item.quantidade}
-                          </span>
-                          <span className="text-muted-foreground">
-                            {formatarBRL(item.preco * item.quantidade)}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
+                  <ul className="flex flex-col gap-3">
+                    {coluna.pedidos.length === 0 ? (
+                      <li className="rounded-xl border border-dashed border-border bg-card/60 px-3 py-8 text-center text-xs text-muted-foreground">
+                        Nenhum pedido nesta etapa
+                      </li>
+                    ) : (
+                      coluna.pedidos.map((p) => {
+                        const proximoStatus = p.status === "pendente" ? "preparando" : p.status === "preparando" ? "entregue" : null
+                        const acao = p.status === "pendente" ? "Iniciar preparo" : p.status === "preparando" ? "Enviar para entrega" : null
+                        const AcaoIcon = p.status === "pendente" ? Play : p.status === "preparando" ? Send : PackageCheck
+                        return (
+                          <li key={p.id} className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                  Pedido #{p.id.slice(-6).toUpperCase()}
+                                </p>
+                                <p className="truncate text-sm font-bold text-foreground">{p.cliente}</p>
+                                <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                                  <Clock className="size-3" aria-hidden="true" />
+                                  {horaFormatada(p.data)} · {rotuloForma[p.forma]}
+                                </p>
+                              </div>
+                              <button type="button" onClick={() => removePedido(p.id)} className="rounded-md p-1.5 text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive" aria-label={`Remover pedido de ${p.cliente}`}>
+                                <Trash2 className="size-4" aria-hidden="true" />
+                              </button>
+                            </div>
 
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">
-                        Total
-                      </span>
-                      <span className="text-sm font-bold text-primary">
-                        {formatarBRL(totalPedido(p.itens))}
-                      </span>
-                    </div>
+                            <div className="flex items-start gap-2 rounded-lg bg-muted/60 px-2.5 py-2 text-xs text-muted-foreground">
+                              <MapPin className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+                              <span>Retirada no balcão · endereço não informado</span>
+                            </div>
 
-                    {p.observacao && (
-                      <p className="text-xs italic text-muted-foreground">
-                        {p.observacao}
-                      </p>
+                            <ul className="flex flex-col gap-1.5 border-y border-border py-2">
+                              {p.itens.map((item, i) => (
+                                <li key={i} className="flex items-center justify-between gap-2 text-sm text-foreground">
+                                  <span className="truncate">{item.quantidade}× {item.descricao}</span>
+                                  <span className="shrink-0 text-muted-foreground">{formatarBRL(item.preco * item.quantidade)}</span>
+                                </li>
+                              ))}
+                            </ul>
+
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">Total do pedido</span>
+                              <span className="text-base font-bold text-primary">{formatarBRL(totalPedido(p.itens))}</span>
+                            </div>
+
+                            {p.observacao && <p className="text-xs italic text-muted-foreground">{p.observacao}</p>}
+
+                            {acao && proximoStatus ? (
+                              <Button type="button" size="sm" className="w-full" onClick={() => atualizarStatusPedido(p.id, proximoStatus)}>
+                                <AcaoIcon className="size-4" aria-hidden="true" />
+                                {acao}
+                              </Button>
+                            ) : (
+                              <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                                <AcaoIcon className="size-4" aria-hidden="true" /> Pedido concluído
+                              </div>
+                            )}
+                          </li>
+                        )
+                      })
                     )}
-
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex flex-wrap gap-1.5">
-                        {statusInfo.map((s) => {
-                          const ativo = p.status === s.valor
-                          return (
-                            <button
-                              key={s.valor}
-                              type="button"
-                              onClick={() =>
-                                atualizarStatusPedido(p.id, s.valor)
-                              }
-                              className={`rounded-md border px-2.5 py-1 text-xs font-medium transition ${
-                                ativo
-                                  ? "border-primary bg-primary/10 text-primary"
-                                  : "border-input bg-background text-muted-foreground hover:border-ring"
-                              }`}
-                              aria-pressed={ativo}
-                            >
-                              {rotuloStatus[s.valor]}
-                            </button>
-                          )
-                        })}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removePedido(p.id)}
-                        className="rounded-md p-1.5 text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
-                        aria-label={`Remover pedido de ${p.cliente}`}
-                      >
-                        <Trash2 className="size-4" aria-hidden="true" />
-                      </button>
-                    </div>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-        </div>
+                  </ul>
+                </section>
+              )
+            })}
+          </div>
+        </section>
       </div>
     </AppShell>
   )

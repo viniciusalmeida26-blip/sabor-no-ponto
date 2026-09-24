@@ -6,22 +6,24 @@ import { usePathname, useRouter } from "next/navigation"
 import { useStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
 import { EmailAvatar } from "@/components/email-avatar"
+import { MealNavIcon } from "@/components/meal-avatar"
 import {
-  ChefHat,
   Soup,
   HandPlatter,
   CalendarDays,
   Receipt,
   CookingPot,
+  ClipboardPenLine,
   LogOut,
 } from "lucide-react"
 
 const navItems = [
-  { href: "/vendas", label: "Início", icon: Soup },
+  { href: "/vendas", label: "Início", icon: Soup, image: true },
   { href: "/pedidos", label: "Pedidos", icon: HandPlatter },
   { href: "/calendario", label: "Calendário", icon: CalendarDays },
   { href: "/relatorios", label: "Relatórios", icon: Receipt },
   { href: "/configuracoes", label: "Config", icon: CookingPot },
+  { href: "/gerenciamento-cardapio", label: "Cardápio", icon: ClipboardPenLine, image: true },
 ]
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -53,9 +55,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-10 border-b border-border bg-card/80 backdrop-blur">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-2">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <ChefHat className="size-5" aria-hidden="true" />
-            </div>
+            <MealNavIcon />
             <div className="leading-tight">
               <p className="text-sm font-bold text-foreground">Sabor no Ponto</p>
               <p className="text-xs text-muted-foreground">
@@ -105,7 +105,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                 }`}
                 aria-current={ativo ? "page" : undefined}
               >
-                <Icon className="size-5" aria-hidden="true" />
+                {item.image ? (
+                  <MealNavIcon />
+                ) : (
+                  <Icon className="size-5" aria-hidden="true" />
+                )}
                 {item.label}
               </Link>
             )

@@ -21,8 +21,8 @@ const navItems = [
   { href: "/pedidos", label: "Pedidos", icon: HandPlatter },
   { href: "/calendario", label: "Calendário", icon: CalendarDays },
   { href: "/relatorios", label: "Relatórios", icon: Receipt },
-  { href: "/configuracoes", label: "Config", icon: CookingPot },
   { href: "/gerenciamento-cardapio", label: "Cardápio", icon: UtensilsCrossed },
+  { href: "/configuracoes", label: "Config", icon: CookingPot },
 ]
 
 export function AppShell({ children }: { children: ReactNode }) {

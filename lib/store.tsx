@@ -106,6 +106,8 @@ type StoreContextType = {
   despesas: Despesa[]
   pedidos: Pedido[]
   produtos: Produto[]
+  marmitaDoDiaId: string
+  definirMarmitaDoDia: (produtoId: string) => void
   atualizarProduto: (produto: Produto) => void
   hidratado: boolean
   login: (email: string, senha: string) => boolean
@@ -143,6 +145,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [despesas, setDespesas] = useState<Despesa[]>([])
   const [pedidos, setPedidos] = useState<Pedido[]>([])
   const [catalogo, setCatalogo] = useState<Produto[]>(produtos)
+  const [marmitaDoDiaId, setMarmitaDoDiaId] = useState("marmita-m")
   const [ultimoResetPedidos, setUltimoResetPedidos] = useState<string | null>(null)
   const [hidratado, setHidratado] = useState(false)
 
@@ -150,11 +153,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setUsuario(ler<Usuario | null>(CHAVE_USUARIO, null))
     const salvo = ler<Produto[]>("snp_catalogo", produtos)
-    setCatalogo(salvo.map((item) => {
-      const padrao = produtos.find((produto) => produto.id === item.id)
-      return padrao && !item.imagem ? { ...item, imagem: padrao.imagem } : item
-    }))
+    const normalizado = produtos.map((padrao) => {
+      const salvoItem = salvo.find((item) => item.id === padrao.id)
+      return salvoItem ? { ...padrao, ...salvoItem, imagem: salvoItem.imagem || padrao.imagem } : padrao
+    })
+    setCatalogo(normalizado)
+    setMarmitaDoDiaId(ler("snp_marmita_do_dia", "marmita-m"))
   }, [])
+
+  function definirMarmitaDoDia(produtoId: string) {
+    const produto = catalogo.find((item) => item.id === produtoId && item.categoria === "marmita")
+    if (!produto) return
+    setMarmitaDoDiaId(produtoId)
+    window.localStorage.setItem("snp_marmita_do_dia", produtoId)
+  }
 
   function atualizarProduto(produto: Produto) {
     setCatalogo((atual) => {
@@ -306,6 +318,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         despesas,
         pedidos,
         produtos: catalogo,
+        marmitaDoDiaId,
+        definirMarmitaDoDia,
         atualizarProduto,
         hidratado,
         ultimoResetPedidos,

@@ -56,7 +56,7 @@ function ProdutoDialog({ produto, onSave }: { produto: Produto; onSave: (produto
           <DialogDescription>Atualize as informações do item do cardápio.</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4 py-2">
-          <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-2 sm:col-span-2">
               <Label htmlFor={`nome-${produto.id}`}>Nome do item</Label>
               <Input id={`nome-${produto.id}`} value={form.nome} onChange={(event) => setForm({ ...form, nome: event.target.value })} />
@@ -99,7 +99,8 @@ function ProdutoDialog({ produto, onSave }: { produto: Produto; onSave: (produto
 }
 
 export default function GerenciamentoCardapioPage() {
-  const { produtos, atualizarProduto } = useStore()
+  const { produtos, atualizarProduto, marmitaDoDiaId, definirMarmitaDoDia } = useStore()
+  const marmitas = produtos.filter((produto) => produto.categoria === "marmita")
   return (
     <AppShell>
       <div className="flex flex-col gap-6">
@@ -107,6 +108,10 @@ export default function GerenciamentoCardapioPage() {
           <div><p className="text-sm font-medium text-primary">Administração</p><h1 className="text-2xl font-bold tracking-tight text-foreground">Gerenciamento de cardápio</h1><p className="text-sm text-muted-foreground">Edite os produtos, preços e disponibilidade em um só lugar.</p></div>
           <Badge variant="secondary">{produtos.length} produtos</Badge>
         </div>
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="pb-3"><CardTitle className="text-base">Marmita do Dia</CardTitle><CardDescription>Escolha um produto já cadastrado para o destaque da página inicial.</CardDescription></CardHeader>
+          <CardContent><Select value={marmitaDoDiaId} onValueChange={definirMarmitaDoDia}><SelectTrigger className="bg-background"><SelectValue placeholder="Selecione a Marmita do Dia" /></SelectTrigger><SelectContent>{marmitas.map((produto) => <SelectItem key={produto.id} value={produto.id}>{produto.nome} · {formatarBRL(produto.preco)}</SelectItem>)}</SelectContent></Select></CardContent>
+        </Card>
         <div className="grid gap-4 sm:grid-cols-2">
           {produtos.map((produto) => (
             <Card key={produto.id} className="overflow-hidden">

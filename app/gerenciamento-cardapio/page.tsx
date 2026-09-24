@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { AppShell } from "@/components/app-shell"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -11,8 +11,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
-import { useStore, formatarBRL, type CategoriaProduto, type Produto } from "@/lib/store"
-import { ImageIcon, Pencil, Plus, UtensilsCrossed } from "lucide-react"
+import { useStore, formatarBRL, ehMarmita, type CategoriaProduto, type Produto } from "@/lib/store"
+import { ImageIcon, Pencil, Plus, UtensilsCrossed, TrendingUp, PackageCheck, CalendarDays } from "lucide-react"
 import { toast } from "sonner"
 
 const categorias: { value: CategoriaProduto; label: string }[] = [
@@ -23,6 +23,38 @@ const categorias: { value: CategoriaProduto; label: string }[] = [
 ]
 
 const categoriaLabel = (categoria: CategoriaProduto) => categorias.find((item) => item.value === categoria)?.label ?? categoria
+
+function NovoProdutoDialog({ onSave, trigger }: { onSave: (produto: Omit<Produto, "id">) => void; trigger?: ReactNode }) {
+  const [aberto, setAberto] = useState(false)
+  const [form, setForm] = useState<Omit<Produto, "id">>({ nome: "", descricao: "", preco: 0, categoria: "marmita", imagem: "", disponivel: true })
+
+  function salvar() {
+    if (!form.nome.trim() || form.preco < 0) {
+      toast.error("Informe um nome e um preço válido.")
+      return
+    }
+    onSave({ ...form, nome: form.nome.trim(), descricao: form.descricao.trim(), imagem: form.imagem.trim() })
+    setForm({ nome: "", descricao: "", preco: 0, categoria: "marmita", imagem: "", disponivel: true })
+    setAberto(false)
+    toast.success("Produto adicionado ao cardápio")
+  }
+
+  return <Dialog open={aberto} onOpenChange={setAberto}>
+    <DialogTrigger asChild>{trigger ?? <Button onClick={() => setAberto(true)}><Plus data-icon="inline-start" /> Adicionar produto</Button>}</DialogTrigger>
+    <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+      <DialogHeader><DialogTitle>Adicionar produto</DialogTitle><DialogDescription>Cadastre um novo item para usar no cardápio e nos pedidos.</DialogDescription></DialogHeader>
+      <div className="grid gap-4 py-2 sm:grid-cols-2">
+        <div className="flex flex-col gap-2 sm:col-span-2"><Label>Nome do item</Label><Input value={form.nome} onChange={(event) => setForm({ ...form, nome: event.target.value })} /></div>
+        <div className="flex flex-col gap-2 sm:col-span-2"><Label>Descrição</Label><Textarea value={form.descricao} onChange={(event) => setForm({ ...form, descricao: event.target.value })} rows={3} /></div>
+        <div className="flex flex-col gap-2"><Label>Preço (R$)</Label><Input type="number" min="0" step="0.01" value={form.preco} onChange={(event) => setForm({ ...form, preco: Number(event.target.value) })} /></div>
+        <div className="flex flex-col gap-2"><Label>Categoria</Label><Select value={form.categoria} onValueChange={(categoria: CategoriaProduto) => setForm({ ...form, categoria })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{categorias.map((categoria) => <SelectItem key={categoria.value} value={categoria.value}>{categoria.label}</SelectItem>)}</SelectContent></Select></div>
+        <div className="flex flex-col gap-2 sm:col-span-2"><Label>URL da imagem</Label><Input placeholder="https://... ou /images/..." value={form.imagem} onChange={(event) => setForm({ ...form, imagem: event.target.value })} /></div>
+        <div className="overflow-hidden rounded-lg border bg-muted sm:col-span-2">{form.imagem ? <img src={form.imagem} alt="Pré-visualização do novo produto" className="h-32 w-full object-cover" /> : <div className="flex h-32 items-center justify-center text-muted-foreground"><ImageIcon /></div>}</div>
+      </div>
+      <DialogFooter><Button variant="outline" onClick={() => setAberto(false)}>Cancelar</Button><Button onClick={salvar}>Adicionar produto</Button></DialogFooter>
+    </DialogContent>
+  </Dialog>
+}
 
 function ProdutoDialog({ produto, onSave }: { produto: Produto; onSave: (produto: Produto) => void }) {
   const [aberto, setAberto] = useState(false)
@@ -99,8 +131,13 @@ function ProdutoDialog({ produto, onSave }: { produto: Produto; onSave: (produto
 }
 
 export default function GerenciamentoCardapioPage() {
-  const { produtos, atualizarProduto, configuracaoMarmitaDia, salvarConfiguracaoMarmitaDia } = useStore()
+  const { produtos, vendas, adicionarProduto, atualizarProduto, configuracaoMarmitaDia, salvarConfiguracaoMarmitaDia } = useStore()
   const marmitas = produtos.filter((produto) => produto.categoria === "marmita")
+  const hoje = new Date()
+  const vendasHoje = vendas.filter((venda) => { const data = new Date(venda.data); return data.toDateString() === hoje.toDateString() })
+  const totalHoje = vendasHoje.reduce((total, venda) => total + venda.quantidade * venda.valorUnitario, 0)
+  const totalMarmitas = vendasHoje.filter((venda) => ehMarmita(venda.descricao)).reduce((total, venda) => total + venda.quantidade * venda.valorUnitario, 0)
+  const quantidadeMarmitas = vendasHoje.filter((venda) => ehMarmita(venda.descricao)).reduce((total, venda) => total + venda.quantidade, 0)
   const [destaque, setDestaque] = useState(configuracaoMarmitaDia)
 
   useEffect(() => setDestaque(configuracaoMarmitaDia), [configuracaoMarmitaDia])
@@ -119,9 +156,14 @@ export default function GerenciamentoCardapioPage() {
   return (
     <AppShell>
       <div className="flex flex-col gap-6">
+        <section aria-label="Resumo administrativo" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-xl border border-border bg-card p-4 shadow-sm"><div className="flex items-center justify-between"><p className="text-xs font-medium text-muted-foreground">Vendas de hoje</p><TrendingUp className="size-5 text-primary" /></div><p className="mt-2 text-2xl font-bold text-foreground">{formatarBRL(totalHoje)}</p><p className="mt-1 text-xs text-muted-foreground">{vendasHoje.length} registro(s)</p></div>
+          <div className="rounded-xl border border-border bg-card p-4 shadow-sm"><div className="flex items-center justify-between"><p className="text-xs font-medium text-muted-foreground">Só marmitas vendidas</p><UtensilsCrossed className="size-5 text-primary" /></div><p className="mt-2 text-2xl font-bold text-foreground">{formatarBRL(totalMarmitas)}</p><p className="mt-1 text-xs text-muted-foreground">{quantidadeMarmitas} unidade(s) · {totalHoje ? Math.round((totalMarmitas / totalHoje) * 100) : 0}% do total</p></div>
+          {marmitas.slice(0, 2).map((produto, index) => <div key={produto.id} className="rounded-xl border border-border bg-card p-4 shadow-sm"><div className="flex items-center justify-between"><p className="truncate text-xs font-medium text-muted-foreground">{produto.nome}</p>{index === 0 ? <PackageCheck className="size-5 text-primary" /> : <CalendarDays className="size-5 text-primary" />}</div><p className="mt-2 text-2xl font-bold text-foreground">{formatarBRL(produto.preco)}</p><p className="mt-1 text-xs text-muted-foreground">preço do cardápio</p></div>)}
+        </section>
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div><p className="text-sm font-medium text-primary">Administração</p><h1 className="text-2xl font-bold tracking-tight text-foreground">Gerenciamento de cardápio</h1><p className="text-sm text-muted-foreground">Edite os produtos, preços e disponibilidade em um só lugar.</p></div>
-          <Badge variant="secondary">{produtos.length} produtos</Badge>
+          <div className="flex items-center gap-2"><Badge variant="secondary">{produtos.length} produtos</Badge><NovoProdutoDialog onSave={adicionarProduto} /></div>
         </div>
         <Card className="border-primary/20 bg-primary/5">
           <CardHeader className="pb-3"><CardTitle className="text-base">Marmita do Dia</CardTitle><CardDescription>Selecione um produto existente e personalize apenas o conteúdo do destaque.</CardDescription></CardHeader>
@@ -147,7 +189,7 @@ export default function GerenciamentoCardapioPage() {
             </Card>
           ))}
         </div>
-        <Card className="border-dashed bg-card/70"><CardContent className="flex items-center gap-3 p-4 text-sm text-muted-foreground"><Plus className="text-primary" /> Para adicionar novos produtos, mantenha o catálogo centralizado nesta página.</CardContent></Card>
+        <Card className="border-dashed bg-card/70"><CardContent className="flex flex-col items-start gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-muted-foreground">Adicione novos produtos mantendo o catálogo centralizado nesta página.</p><NovoProdutoDialog onSave={adicionarProduto} trigger={<Button type="button" variant="outline"><Plus data-icon="inline-start" /> Adicionar produto</Button>} /></CardContent></Card>
       </div>
     </AppShell>
   )

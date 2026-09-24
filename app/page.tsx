@@ -23,13 +23,13 @@ export default function LoginPage() {
       setErro("Preencha e-mail e senha para entrar.")
       return
     }
-    const ok = login(email.trim(), senha)
+    const ok = login(email.trim(), senha.trim())
     if (!ok) {
       setErro("E-mail ou senha incorretos.")
       return
     }
     setErro("")
-    router.replace("/vendas")
+    router.push("/vendas")
   }
 
   return (
@@ -135,7 +135,7 @@ export default function LoginPage() {
               </p>
             )}
 
-              <Button type="submit" size="lg" className="mt-1 w-full">
+              <Button type="submit" size="lg" className="mt-1 w-full" disabled={!email.trim() || !senha}>
                 <LockKeyhole className="size-4" aria-hidden="true" />
                 Entrar
               </Button>

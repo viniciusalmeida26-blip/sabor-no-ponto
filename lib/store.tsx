@@ -213,7 +213,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setHidratado(true)
       return
     }
-    setHidratado(false)
+    // A sessão pode entrar imediatamente; os dados do painel carregam em segundo plano.
+    setHidratado(true)
     carregarDados()
       .then((dados) => {
         if (!ativo) return
@@ -236,10 +237,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   function login(email: string, senha: string) {
     const emailValido =
       email.trim().toLowerCase() === CREDENCIAL_EMAIL.toLowerCase()
-    const senhaValida = senha === CREDENCIAL_SENHA
+    const senhaValida = senha.trim() === CREDENCIAL_SENHA
     if (!emailValido || !senhaValida) return false
     const u = { email: CREDENCIAL_EMAIL, nome: CREDENCIAL_NOME }
     setUsuario(u)
+    setHidratado(true)
     window.localStorage.setItem(CHAVE_USUARIO, JSON.stringify(u))
     return true
   }

@@ -140,6 +140,7 @@ type StoreContextType = {
 const StoreContext = createContext<StoreContextType | null>(null)
 
 const CHAVE_USUARIO = "snp_usuario"
+const CHAVE_FOTO_PERFIL = "snp_foto_perfil"
 
 function ler<T>(chave: string, padrao: T): T {
   if (typeof window === "undefined") return padrao
@@ -242,12 +243,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const senhaNormalizada = senha.replace(/[\u200B-\u200D\uFEFF]/g, "").trim()
     const senhaValida = senhaNormalizada === CREDENCIAL_SENHA
     if (!emailValido || !senhaValida) return false
-    const salvo = ler<Usuario | null>(CHAVE_USUARIO, null)
-    const u: Usuario = {
-      email: CREDENCIAL_EMAIL,
-      nome: CREDENCIAL_NOME,
-      ...(salvo?.email === CREDENCIAL_EMAIL ? { fotoUrl: salvo.fotoUrl } : {}),
-    }
+      const fotoSalva = ler<string | null>(CHAVE_FOTO_PERFIL, null)
+      const u: Usuario = {
+        email: CREDENCIAL_EMAIL,
+        nome: CREDENCIAL_NOME,
+        ...(fotoSalva ? { fotoUrl: fotoSalva } : {}),
+      }
     setUsuario(u)
     setHidratado(true)
     window.localStorage.setItem(CHAVE_USUARIO, JSON.stringify(u))
@@ -259,6 +260,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (!atual) return atual
       const atualizado = { ...atual, fotoUrl }
       window.localStorage.setItem(CHAVE_USUARIO, JSON.stringify(atualizado))
+      window.localStorage.setItem(CHAVE_FOTO_PERFIL, fotoUrl)
       return atualizado
     })
   }

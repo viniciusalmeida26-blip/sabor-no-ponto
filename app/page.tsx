@@ -23,7 +23,7 @@ export default function LoginPage() {
       setErro("Preencha e-mail e senha para entrar.")
       return
     }
-    const ok = login(email.trim(), senha)
+    const ok = login(email.trim(), senha.trim())
     if (!ok) {
       setErro("E-mail ou senha incorretos.")
       return

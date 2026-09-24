@@ -72,6 +72,7 @@ export type ItemPedido = {
   descricao: string
   quantidade: number
   preco: number
+  imagem?: string
 }
 
 export function totalPedido(itens: ItemPedido[]) {
@@ -116,6 +117,7 @@ type StoreContextType = {
   marmitaDoDiaId: string
   configuracaoMarmitaDia: ConfiguracaoMarmitaDia
   salvarConfiguracaoMarmitaDia: (configuracao: ConfiguracaoMarmitaDia) => void
+  adicionarProduto: (produto: Omit<Produto, "id">) => void
   atualizarProduto: (produto: Produto) => void
   hidratado: boolean
   login: (email: string, senha: string) => boolean
@@ -161,10 +163,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setUsuario(ler<Usuario | null>(CHAVE_USUARIO, null))
     const salvo = ler<Produto[]>("snp_catalogo", produtos)
-    const normalizado = produtos.map((padrao) => {
-      const salvoItem = salvo.find((item) => item.id === padrao.id)
-      return salvoItem ? { ...padrao, ...salvoItem, imagem: salvoItem.imagem || padrao.imagem } : padrao
-    })
+    const normalizado = [
+      ...produtos.map((padrao) => {
+        const salvoItem = salvo.find((item) => item.id === padrao.id)
+        return salvoItem ? { ...padrao, ...salvoItem, imagem: salvoItem.imagem || padrao.imagem } : padrao
+      }),
+      ...salvo.filter((item) => !produtos.some((padrao) => padrao.id === item.id)),
+    ]
     setCatalogo(normalizado)
     const produtoId = ler("snp_marmita_do_dia", "marmita-m")
     const salvoDestaque = ler<Partial<ConfiguracaoMarmitaDia>>("snp_configuracao_marmita_dia", {})
@@ -178,6 +183,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setConfiguracaoMarmitaDia(normalizada)
     window.localStorage.setItem("snp_marmita_do_dia", produto.id)
     window.localStorage.setItem("snp_configuracao_marmita_dia", JSON.stringify(normalizada))
+  }
+
+  function adicionarProduto(produto: Omit<Produto, "id">) {
+    const novoProduto: Produto = { ...produto, id: `${produto.categoria}-${Date.now()}` }
+    setCatalogo((atual) => {
+      const novo = [...atual, novoProduto]
+      window.localStorage.setItem("snp_catalogo", JSON.stringify(novo))
+      return novo
+    })
   }
 
   function atualizarProduto(produto: Produto) {
@@ -333,6 +347,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         marmitaDoDiaId: configuracaoMarmitaDia.produtoId,
         configuracaoMarmitaDia,
         salvarConfiguracaoMarmitaDia,
+        adicionarProduto,
         atualizarProduto,
         hidratado,
         ultimoResetPedidos,

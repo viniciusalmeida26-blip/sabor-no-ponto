@@ -24,6 +24,38 @@ const categorias: { value: CategoriaProduto; label: string }[] = [
 
 const categoriaLabel = (categoria: CategoriaProduto) => categorias.find((item) => item.value === categoria)?.label ?? categoria
 
+function NovoProdutoDialog({ onSave }: { onSave: (produto: Omit<Produto, "id">) => void }) {
+  const [aberto, setAberto] = useState(false)
+  const [form, setForm] = useState<Omit<Produto, "id">>({ nome: "", descricao: "", preco: 0, categoria: "marmita", imagem: "", disponivel: true })
+
+  function salvar() {
+    if (!form.nome.trim() || form.preco < 0) {
+      toast.error("Informe um nome e um preço válido.")
+      return
+    }
+    onSave({ ...form, nome: form.nome.trim(), descricao: form.descricao.trim(), imagem: form.imagem.trim() })
+    setForm({ nome: "", descricao: "", preco: 0, categoria: "marmita", imagem: "", disponivel: true })
+    setAberto(false)
+    toast.success("Produto adicionado ao cardápio")
+  }
+
+  return <Dialog open={aberto} onOpenChange={setAberto}>
+    <DialogTrigger asChild><Button onClick={() => setAberto(true)}><Plus data-icon="inline-start" /> Adicionar produto</Button></DialogTrigger>
+    <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+      <DialogHeader><DialogTitle>Adicionar produto</DialogTitle><DialogDescription>Cadastre um novo item para usar no cardápio e nos pedidos.</DialogDescription></DialogHeader>
+      <div className="grid gap-4 py-2 sm:grid-cols-2">
+        <div className="flex flex-col gap-2 sm:col-span-2"><Label>Nome do item</Label><Input value={form.nome} onChange={(event) => setForm({ ...form, nome: event.target.value })} /></div>
+        <div className="flex flex-col gap-2 sm:col-span-2"><Label>Descrição</Label><Textarea value={form.descricao} onChange={(event) => setForm({ ...form, descricao: event.target.value })} rows={3} /></div>
+        <div className="flex flex-col gap-2"><Label>Preço (R$)</Label><Input type="number" min="0" step="0.01" value={form.preco} onChange={(event) => setForm({ ...form, preco: Number(event.target.value) })} /></div>
+        <div className="flex flex-col gap-2"><Label>Categoria</Label><Select value={form.categoria} onValueChange={(categoria: CategoriaProduto) => setForm({ ...form, categoria })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{categorias.map((categoria) => <SelectItem key={categoria.value} value={categoria.value}>{categoria.label}</SelectItem>)}</SelectContent></Select></div>
+        <div className="flex flex-col gap-2 sm:col-span-2"><Label>URL da imagem</Label><Input placeholder="https://... ou /images/..." value={form.imagem} onChange={(event) => setForm({ ...form, imagem: event.target.value })} /></div>
+        <div className="overflow-hidden rounded-lg border bg-muted sm:col-span-2">{form.imagem ? <img src={form.imagem} alt="Pré-visualização do novo produto" className="h-32 w-full object-cover" /> : <div className="flex h-32 items-center justify-center text-muted-foreground"><ImageIcon /></div>}</div>
+      </div>
+      <DialogFooter><Button variant="outline" onClick={() => setAberto(false)}>Cancelar</Button><Button onClick={salvar}>Adicionar produto</Button></DialogFooter>
+    </DialogContent>
+  </Dialog>
+}
+
 function ProdutoDialog({ produto, onSave }: { produto: Produto; onSave: (produto: Produto) => void }) {
   const [aberto, setAberto] = useState(false)
   const [form, setForm] = useState(produto)
@@ -99,7 +131,7 @@ function ProdutoDialog({ produto, onSave }: { produto: Produto; onSave: (produto
 }
 
 export default function GerenciamentoCardapioPage() {
-  const { produtos, atualizarProduto, configuracaoMarmitaDia, salvarConfiguracaoMarmitaDia } = useStore()
+  const { produtos, adicionarProduto, atualizarProduto, configuracaoMarmitaDia, salvarConfiguracaoMarmitaDia } = useStore()
   const marmitas = produtos.filter((produto) => produto.categoria === "marmita")
   const [destaque, setDestaque] = useState(configuracaoMarmitaDia)
 
@@ -121,7 +153,7 @@ export default function GerenciamentoCardapioPage() {
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div><p className="text-sm font-medium text-primary">Administração</p><h1 className="text-2xl font-bold tracking-tight text-foreground">Gerenciamento de cardápio</h1><p className="text-sm text-muted-foreground">Edite os produtos, preços e disponibilidade em um só lugar.</p></div>
-          <Badge variant="secondary">{produtos.length} produtos</Badge>
+          <div className="flex items-center gap-2"><Badge variant="secondary">{produtos.length} produtos</Badge><NovoProdutoDialog onSave={adicionarProduto} /></div>
         </div>
         <Card className="border-primary/20 bg-primary/5">
           <CardHeader className="pb-3"><CardTitle className="text-base">Marmita do Dia</CardTitle><CardDescription>Selecione um produto existente e personalize apenas o conteúdo do destaque.</CardDescription></CardHeader>

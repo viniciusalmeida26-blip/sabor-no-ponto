@@ -136,6 +136,7 @@ export default function PedidosPage() {
         descricao: p.nome,
         quantidade: quantidades[p.nome],
         preco: p.preco,
+        imagem: p.imagem,
       }))
     if (!cliente.trim() || itens.length === 0) return
     addPedido({
@@ -163,17 +164,22 @@ export default function PedidosPage() {
   function CartaoProduto({
     nome,
     preco,
+    imagem,
   }: {
     nome: string
     preco: number
+    imagem: string
   }) {
     return (
       <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background p-3">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground">{nome}</p>
-          <p className="text-xs text-muted-foreground">
-            {formatarBRL(preco)} cada
-          </p>
+        <div className="flex min-w-0 items-center gap-3">
+          <img src={imagem || "/placeholder.svg"} alt="" className="size-12 shrink-0 rounded-lg object-cover shadow-sm" />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-foreground">{nome}</p>
+            <p className="text-xs text-muted-foreground">
+              {formatarBRL(preco)} cada
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -291,7 +297,7 @@ export default function PedidosPage() {
               Marmitas
             </span>
             {marmitas.map((p) => (
-              <CartaoProduto key={p.nome} nome={p.nome} preco={p.preco} />
+              <CartaoProduto key={p.id} nome={p.nome} preco={p.preco} imagem={p.imagem} />
             ))}
           </div>
 
@@ -304,7 +310,7 @@ export default function PedidosPage() {
               Bebidas
             </span>
             {bebidas.map((p) => (
-              <CartaoProduto key={p.nome} nome={p.nome} preco={p.preco} />
+              <CartaoProduto key={p.id} nome={p.nome} preco={p.preco} imagem={p.imagem} />
             ))}
           </div>
 
@@ -433,7 +439,10 @@ export default function PedidosPage() {
                             <ul className="flex flex-col gap-1.5 border-y border-border py-2">
                               {p.itens.map((item, i) => (
                                 <li key={i} className="flex items-center justify-between gap-2 text-sm text-foreground">
-                                  <span className="truncate">{item.quantidade}× {item.descricao}</span>
+                                  <span className="flex min-w-0 items-center gap-2">
+                                    <img src={item.imagem || produtos.find((produto) => produto.nome === item.descricao)?.imagem || "/placeholder.svg"} alt="" className="size-8 shrink-0 rounded-md object-cover" />
+                                    <span className="truncate">{item.quantidade}× {item.descricao}</span>
+                                  </span>
                                   <span className="shrink-0 text-muted-foreground">{formatarBRL(item.preco * item.quantidade)}</span>
                                 </li>
                               ))}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { AppShell } from "@/components/app-shell"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -24,7 +24,7 @@ const categorias: { value: CategoriaProduto; label: string }[] = [
 
 const categoriaLabel = (categoria: CategoriaProduto) => categorias.find((item) => item.value === categoria)?.label ?? categoria
 
-function NovoProdutoDialog({ onSave }: { onSave: (produto: Omit<Produto, "id">) => void }) {
+function NovoProdutoDialog({ onSave, trigger }: { onSave: (produto: Omit<Produto, "id">) => void; trigger?: ReactNode }) {
   const [aberto, setAberto] = useState(false)
   const [form, setForm] = useState<Omit<Produto, "id">>({ nome: "", descricao: "", preco: 0, categoria: "marmita", imagem: "", disponivel: true })
 
@@ -40,7 +40,7 @@ function NovoProdutoDialog({ onSave }: { onSave: (produto: Omit<Produto, "id">) 
   }
 
   return <Dialog open={aberto} onOpenChange={setAberto}>
-    <DialogTrigger asChild><Button onClick={() => setAberto(true)}><Plus data-icon="inline-start" /> Adicionar produto</Button></DialogTrigger>
+    <DialogTrigger asChild>{trigger ?? <Button onClick={() => setAberto(true)}><Plus data-icon="inline-start" /> Adicionar produto</Button>}</DialogTrigger>
     <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
       <DialogHeader><DialogTitle>Adicionar produto</DialogTitle><DialogDescription>Cadastre um novo item para usar no cardápio e nos pedidos.</DialogDescription></DialogHeader>
       <div className="grid gap-4 py-2 sm:grid-cols-2">
@@ -189,7 +189,7 @@ export default function GerenciamentoCardapioPage() {
             </Card>
           ))}
         </div>
-        <Card className="border-dashed bg-card/70"><CardContent className="flex items-center gap-3 p-4 text-sm text-muted-foreground"><Plus className="text-primary" /> Para adicionar novos produtos, mantenha o catálogo centralizado nesta página.</CardContent></Card>
+        <Card className="border-dashed bg-card/70"><CardContent className="flex flex-col items-start gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-muted-foreground">Adicione novos produtos mantendo o catálogo centralizado nesta página.</p><NovoProdutoDialog onSave={adicionarProduto} trigger={<Button type="button" variant="outline"><Plus data-icon="inline-start" /> Adicionar produto</Button>} /></CardContent></Card>
       </div>
     </AppShell>
   )

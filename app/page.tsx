@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [senha, setSenha] = useState("")
   const [erro, setErro] = useState("")
+  const [entrando, setEntrando] = useState(false)
 
   useEffect(() => {
     if (hidratado && usuario) router.replace("/vendas")
@@ -23,13 +24,16 @@ export default function LoginPage() {
       setErro("Preencha e-mail e senha para entrar.")
       return
     }
-    const ok = login(email.trim(), senha.trim())
+    const limpar = (valor: string) => valor.replace(/[\u200B-\u200D\uFEFF]/g, "").trim()
+    const ok = login(limpar(email), limpar(senha))
     if (!ok) {
       setErro("E-mail ou senha incorretos.")
+      setEntrando(false)
       return
     }
     setErro("")
-    window.location.assign("/vendas")
+    setEntrando(true)
+    window.location.href = "/vendas"
   }
 
   return (
@@ -135,9 +139,9 @@ export default function LoginPage() {
               </p>
             )}
 
-              <Button type="submit" size="lg" className="mt-1 w-full" disabled={!email.trim() || !senha}>
+              <Button type="submit" size="lg" className="mt-1 w-full" disabled={!email.trim() || !senha.trim() || entrando}>
                 <LockKeyhole className="size-4" aria-hidden="true" />
-                Entrar
+                {entrando ? "Entrando…" : "Entrar"}
               </Button>
             </form>
           </div>

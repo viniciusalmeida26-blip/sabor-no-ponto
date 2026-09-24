@@ -6,7 +6,7 @@ import { Soup, TrendingUp, UtensilsCrossed, PackageCheck, CalendarDays, Clock3 }
 import { useMemo } from "react"
 
 export default function VendasPage() {
-  const { vendas, produtos, marmitaDoDiaId } = useStore()
+  const { vendas, produtos, marmitaDoDiaId, configuracaoMarmitaDia } = useStore()
   const hoje = new Date()
   const vendasHoje = useMemo(
     () =>
@@ -50,9 +50,10 @@ export default function VendasPage() {
           <div className="absolute inset-0 bg-gradient-to-r from-foreground/95 via-foreground/65 to-foreground/15" />
           <div className="relative flex min-h-[340px] flex-col justify-center gap-5 p-6 text-primary-foreground sm:p-9">
             <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-widest text-primary-foreground/85"><Soup className="size-5" aria-hidden="true" /> Cardápio em destaque</div>
-            <div><p className="text-sm font-medium text-primary-foreground/80">Marmita do Dia</p><h2 className="mt-1 max-w-2xl text-3xl font-bold leading-tight text-balance sm:text-4xl">{marmitaDoDia?.nome}</h2></div>
-            <p className="max-w-xl text-sm leading-6 text-primary-foreground/85">{marmitaDoDia?.descricao}</p>
-            <div className="flex flex-wrap gap-2"><span className="rounded-full bg-primary-foreground/15 px-3 py-1.5 text-sm">Arroz e feijão inclusos</span><span className="rounded-full bg-primary-foreground/15 px-3 py-1.5 text-sm">Produção do dia</span></div>
+            <div><p className="text-sm font-medium text-primary-foreground/80">Marmita do Dia</p><h2 className="mt-1 max-w-2xl text-3xl font-bold leading-tight text-balance sm:text-4xl">{configuracaoMarmitaDia.nome || marmitaDoDia?.nome}</h2></div>
+            <p className="max-w-xl text-sm leading-6 text-primary-foreground/85">{configuracaoMarmitaDia.descricao || marmitaDoDia?.descricao}</p>
+            {configuracaoMarmitaDia.ingredientes && <div className="flex flex-col gap-2"><p className="text-xs font-semibold uppercase tracking-wider text-primary-foreground/70">Ingredientes</p><p className="max-w-xl text-sm leading-6 text-primary-foreground/90">{configuracaoMarmitaDia.ingredientes.split(",").map((item) => item.trim()).filter(Boolean).join(" • ")}</p></div>}
+            <div className="flex flex-wrap gap-2"><span className="rounded-full bg-primary-foreground/15 px-3 py-1.5 text-sm">{marmitaDoDia?.disponivel ? "Disponível" : "Indisponível"}</span><span className="rounded-full bg-primary-foreground/15 px-3 py-1.5 text-sm">Imagem e preço do catálogo</span></div>
             <div className="flex items-end justify-between gap-4 border-t border-primary-foreground/25 pt-4"><span className="text-sm text-primary-foreground/80">Preço cadastrado</span><span className="text-3xl font-bold">{formatarBRL(marmitaDoDia?.preco ?? 0)} <span className="text-sm font-medium text-primary-foreground/75">por unidade</span></span></div>
           </div>
         </section>

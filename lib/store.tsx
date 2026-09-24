@@ -51,6 +51,13 @@ export type Produto = {
   disponivel: boolean
 }
 
+export type ConfiguracaoMarmitaDia = {
+  produtoId: string
+  nome: string
+  ingredientes: string
+  descricao: string
+}
+
 // Catálogo com preços fixos usado nas páginas de Pedidos e Vendas.
 export const produtos: Produto[] = [
   { id: "marmita-p", nome: "Marmita P", descricao: "Arroz, feijão e mistura do dia", preco: 15, categoria: "marmita", imagem: "/images/fundo-marmita.png", disponivel: true },
@@ -107,7 +114,8 @@ type StoreContextType = {
   pedidos: Pedido[]
   produtos: Produto[]
   marmitaDoDiaId: string
-  definirMarmitaDoDia: (produtoId: string) => void
+  configuracaoMarmitaDia: ConfiguracaoMarmitaDia
+  salvarConfiguracaoMarmitaDia: (configuracao: ConfiguracaoMarmitaDia) => void
   atualizarProduto: (produto: Produto) => void
   hidratado: boolean
   login: (email: string, senha: string) => boolean
@@ -145,7 +153,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [despesas, setDespesas] = useState<Despesa[]>([])
   const [pedidos, setPedidos] = useState<Pedido[]>([])
   const [catalogo, setCatalogo] = useState<Produto[]>(produtos)
-  const [marmitaDoDiaId, setMarmitaDoDiaId] = useState("marmita-m")
+  const [configuracaoMarmitaDia, setConfiguracaoMarmitaDia] = useState<ConfiguracaoMarmitaDia>({ produtoId: "marmita-m", nome: "", ingredientes: "", descricao: "" })
   const [ultimoResetPedidos, setUltimoResetPedidos] = useState<string | null>(null)
   const [hidratado, setHidratado] = useState(false)
 
@@ -158,14 +166,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return salvoItem ? { ...padrao, ...salvoItem, imagem: salvoItem.imagem || padrao.imagem } : padrao
     })
     setCatalogo(normalizado)
-    setMarmitaDoDiaId(ler("snp_marmita_do_dia", "marmita-m"))
+    const produtoId = ler("snp_marmita_do_dia", "marmita-m")
+    const salvoDestaque = ler<Partial<ConfiguracaoMarmitaDia>>("snp_configuracao_marmita_dia", {})
+    setConfiguracaoMarmitaDia({ produtoId, nome: salvoDestaque.nome ?? "", ingredientes: salvoDestaque.ingredientes ?? "", descricao: salvoDestaque.descricao ?? "" })
   }, [])
 
-  function definirMarmitaDoDia(produtoId: string) {
-    const produto = catalogo.find((item) => item.id === produtoId && item.categoria === "marmita")
+  function salvarConfiguracaoMarmitaDia(configuracao: ConfiguracaoMarmitaDia) {
+    const produto = catalogo.find((item) => item.id === configuracao.produtoId && item.categoria === "marmita")
     if (!produto) return
-    setMarmitaDoDiaId(produtoId)
-    window.localStorage.setItem("snp_marmita_do_dia", produtoId)
+    const normalizada = { ...configuracao, nome: configuracao.nome.trim(), ingredientes: configuracao.ingredientes.trim(), descricao: configuracao.descricao.trim() }
+    setConfiguracaoMarmitaDia(normalizada)
+    window.localStorage.setItem("snp_marmita_do_dia", produto.id)
+    window.localStorage.setItem("snp_configuracao_marmita_dia", JSON.stringify(normalizada))
   }
 
   function atualizarProduto(produto: Produto) {
@@ -318,8 +330,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         despesas,
         pedidos,
         produtos: catalogo,
-        marmitaDoDiaId,
-        definirMarmitaDoDia,
+        marmitaDoDiaId: configuracaoMarmitaDia.produtoId,
+        configuracaoMarmitaDia,
+        salvarConfiguracaoMarmitaDia,
         atualizarProduto,
         hidratado,
         ultimoResetPedidos,

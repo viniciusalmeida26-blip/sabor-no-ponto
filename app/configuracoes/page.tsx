@@ -76,8 +76,15 @@ export default function ConfiguracoesPage() {
     dados.append("file", arquivo)
     try {
       const resposta = await fetch("/api/avatar", { method: "POST", body: dados })
-      const resultado = await resposta.json()
+      const texto = await resposta.text()
+      let resultado: { url?: string; error?: string } = {}
+      try {
+        resultado = texto ? JSON.parse(texto) : {}
+      } catch {
+        throw new Error("O servidor não conseguiu confirmar a imagem.")
+      }
       if (!resposta.ok) throw new Error(resultado.error || "Não foi possível atualizar a foto.")
+      if (!resultado.url) throw new Error("O servidor não retornou a foto salva.")
       atualizarFotoPerfil(resultado.url)
     } catch (erro) {
       setErroFoto(erro instanceof Error ? erro.message : "Não foi possível atualizar a foto.")

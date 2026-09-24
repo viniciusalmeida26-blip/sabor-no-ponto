@@ -237,7 +237,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   function login(email: string, senha: string) {
     const emailValido =
       email.trim().toLowerCase() === CREDENCIAL_EMAIL.toLowerCase()
-    const senhaValida = senha.trim() === CREDENCIAL_SENHA
+    const senhaNormalizada = senha.replace(/[\u200B-\u200D\uFEFF]/g, "").trim()
+    const senhaValida = senhaNormalizada === CREDENCIAL_SENHA
     if (!emailValido || !senhaValida) return false
     const u = { email: CREDENCIAL_EMAIL, nome: CREDENCIAL_NOME }
     setUsuario(u)

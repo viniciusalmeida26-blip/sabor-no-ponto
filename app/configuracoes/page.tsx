@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState, type ChangeEvent } from "react"
 import { useRouter } from "next/navigation"
 import { AppShell } from "@/components/app-shell"
 import { EmailAvatar } from "@/components/email-avatar"
@@ -61,8 +61,31 @@ function ItemAjuda({ p, r }: { p: string; r: string }) {
 }
 
 export default function ConfiguracoesPage() {
-  const { usuario, logout } = useStore()
+  const { usuario, logout, atualizarFotoPerfil } = useStore()
   const router = useRouter()
+  const inputFotoRef = useRef<HTMLInputElement>(null)
+  const [enviandoFoto, setEnviandoFoto] = useState(false)
+  const [erroFoto, setErroFoto] = useState("")
+
+  async function trocarFoto(evento: ChangeEvent<HTMLInputElement>) {
+    const arquivo = evento.target.files?.[0]
+    if (!arquivo) return
+    setErroFoto("")
+    setEnviandoFoto(true)
+    const dados = new FormData()
+    dados.append("file", arquivo)
+    try {
+      const resposta = await fetch("/api/avatar", { method: "POST", body: dados })
+      const resultado = await resposta.json()
+      if (!resposta.ok) throw new Error(resultado.error || "Não foi possível atualizar a foto.")
+      atualizarFotoPerfil(resultado.url)
+    } catch (erro) {
+      setErroFoto(erro instanceof Error ? erro.message : "Não foi possível atualizar a foto.")
+    } finally {
+      setEnviandoFoto(false)
+      evento.target.value = ""
+    }
+  }
 
   function sair() {
     logout()
@@ -104,12 +127,16 @@ export default function ConfiguracoesPage() {
           <h2 className="text-sm font-semibold text-foreground">Conta</h2>
 
           <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
-            <EmailAvatar
-              email={usuario?.email || ""}
-              nome={usuario?.nome}
-              size={48}
-              className="ring-2 ring-border"
-            />
+            <button type="button" onClick={() => inputFotoRef.current?.click()} disabled={enviandoFoto} className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="Alterar foto de perfil">
+              <EmailAvatar
+                email={usuario?.email || ""}
+                nome={usuario?.nome}
+                fotoUrl={usuario?.fotoUrl}
+                size={48}
+                className="ring-2 ring-border"
+              />
+            </button>
+            <input ref={inputFotoRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={trocarFoto} className="sr-only" />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">
                 {usuario?.nome}
@@ -118,6 +145,8 @@ export default function ConfiguracoesPage() {
                 <Mail className="size-3.5 shrink-0" aria-hidden="true" />
                 <span className="truncate">{usuario?.email}</span>
               </p>
+              <button type="button" onClick={() => inputFotoRef.current?.click()} disabled={enviandoFoto} className="mt-1 text-xs font-medium text-primary hover:underline">{enviandoFoto ? "Enviando foto…" : "Alterar foto"}</button>
+              {erroFoto && <p className="text-xs text-destructive">{erroFoto}</p>}
             </div>
           </div>
 

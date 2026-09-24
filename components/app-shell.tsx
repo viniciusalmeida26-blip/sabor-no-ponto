@@ -66,6 +66,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <EmailAvatar
               email={usuario.email}
               nome={usuario.nome}
+              fotoUrl={usuario.fotoUrl}
               size={36}
               className="ring-2 ring-border"
             />

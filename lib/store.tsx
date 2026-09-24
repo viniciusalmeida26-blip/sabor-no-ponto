@@ -101,6 +101,7 @@ export type Pedido = {
 type Usuario = {
   nome: string
   email: string
+  fotoUrl?: string
 }
 
 // Credenciais fixas de acesso.
@@ -121,6 +122,7 @@ type StoreContextType = {
   atualizarProduto: (produto: Produto) => void
   hidratado: boolean
   login: (email: string, senha: string) => boolean
+  atualizarFotoPerfil: (fotoUrl: string) => void
   logout: () => void
   addVenda: (v: Omit<Venda, "id" | "data">) => void
   removeVenda: (id: string) => void
@@ -247,6 +249,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return true
   }
 
+  function atualizarFotoPerfil(fotoUrl: string) {
+    setUsuario((atual) => {
+      if (!atual) return atual
+      const atualizado = { ...atual, fotoUrl }
+      window.localStorage.setItem(CHAVE_USUARIO, JSON.stringify(atualizado))
+      return atualizado
+    })
+  }
+
   function logout() {
     setUsuario(null)
     window.localStorage.removeItem(CHAVE_USUARIO)
@@ -356,6 +367,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         ultimoResetPedidos,
         resetarPedidosEntregues,
         login,
+        atualizarFotoPerfil,
         logout,
         addVenda,
         removeVenda,

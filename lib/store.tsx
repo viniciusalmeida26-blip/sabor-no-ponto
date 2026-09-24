@@ -241,6 +241,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!emailValido || !senhaValida) return false
     const u = { email: CREDENCIAL_EMAIL, nome: CREDENCIAL_NOME }
     setUsuario(u)
+    setHidratado(true)
     window.localStorage.setItem(CHAVE_USUARIO, JSON.stringify(u))
     return true
   }

@@ -1,41 +1,13 @@
 "use client"
 
 import { AppShell } from "@/components/app-shell"
-import { formatarBRL, useStore, ehMarmita } from "@/lib/store"
-import { Soup, TrendingUp, UtensilsCrossed, PackageCheck, CalendarDays, Clock3 } from "lucide-react"
-import { useMemo } from "react"
+import { formatarBRL, useStore } from "@/lib/store"
+import { Soup } from "lucide-react"
 
 export default function VendasPage() {
   const { vendas, produtos, marmitaDoDiaId, configuracaoMarmitaDia } = useStore()
-  const hoje = new Date()
-  const vendasHoje = useMemo(
-    () =>
-      vendas.filter((venda) => {
-        const data = new Date(venda.data)
-        return (
-          data.getDate() === hoje.getDate() &&
-          data.getMonth() === hoje.getMonth() &&
-          data.getFullYear() === hoje.getFullYear()
-        )
-      }),
-    [vendas, hoje.getDate(), hoje.getMonth(), hoje.getFullYear()],
-  )
-  const vendasMarmitas = vendasHoje.filter((venda) => ehMarmita(venda.descricao))
-  const totalHoje = vendasHoje.reduce(
-    (total, venda) => total + venda.quantidade * venda.valorUnitario,
-    0,
-  )
-  const totalMarmitas = vendasMarmitas.reduce(
-    (total, venda) => total + venda.quantidade * venda.valorUnitario,
-    0,
-  )
-  const quantidadeMarmitas = vendasMarmitas.reduce(
-    (total, venda) => total + venda.quantidade,
-    0,
-  )
   const marmitas = produtos.filter((produto) => produto.categoria === "marmita")
   const marmitaDoDia = produtos.find((produto) => produto.id === marmitaDoDiaId) ?? marmitas[0]
-  const percentualMarmitas = totalHoje > 0 ? Math.round((totalMarmitas / totalHoje) * 100) : 0
 
   return (
     <AppShell>
@@ -57,11 +29,6 @@ export default function VendasPage() {
           </div>
         </section>
 
-        <section aria-label="Resumo das vendas e valores" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl border border-border bg-card p-4 shadow-sm"><div className="flex items-center justify-between gap-3"><p className="text-xs font-medium text-muted-foreground">Vendas de hoje</p><TrendingUp className="size-5 text-primary" aria-hidden="true" /></div><p className="mt-2 text-2xl font-bold text-foreground">{formatarBRL(totalHoje)}</p><p className="mt-1 text-xs text-muted-foreground">{vendasHoje.length} registro(s)</p></div>
-          <div className="rounded-xl border border-border bg-card p-4 shadow-sm"><div className="flex items-center justify-between gap-3"><p className="text-xs font-medium text-muted-foreground">Só marmitas vendidas</p><UtensilsCrossed className="size-5 text-primary" aria-hidden="true" /></div><p className="mt-2 text-2xl font-bold text-foreground">{formatarBRL(totalMarmitas)}</p><p className="mt-1 text-xs text-muted-foreground">{quantidadeMarmitas} unidade(s) · {percentualMarmitas}% do total</p></div>
-                    {marmitas.slice(0, 2).map((produto, index) => <div key={produto.id} className="rounded-xl border border-border bg-card p-4 shadow-sm"><div className="flex items-center justify-between gap-3"><p className="text-xs font-medium text-muted-foreground">{produto.nome}</p>{index === 0 ? <PackageCheck className="size-5 text-primary" aria-hidden="true" /> : <CalendarDays className="size-5 text-primary" aria-hidden="true" />}</div><p className="mt-2 text-2xl font-bold text-foreground">{formatarBRL(produto.preco)}</p><p className="mt-1 text-xs text-muted-foreground">preço do cardápio</p></div>)}
-        </section>
 
         <section aria-label="Preços das marmitas" className="grid gap-3 sm:grid-cols-3">
           {marmitas.map((produto) => <div key={produto.id} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 shadow-sm"><div className="min-w-0"><p className="truncate text-xs text-muted-foreground">{produto.nome}</p><p className="mt-1 text-2xl font-bold text-foreground">{formatarBRL(produto.preco)}</p></div><img src={produto.imagem} alt="" className="size-12 rounded-lg object-cover shadow-sm" /></div>)}

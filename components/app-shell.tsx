@@ -17,7 +17,7 @@ import {
 } from "lucide-react"
 
 const navItems = [
-  { href: "/vendas", label: "Vendas", icon: Soup },
+  { href: "/vendas", label: "Início", icon: Soup },
   { href: "/pedidos", label: "Pedidos", icon: HandPlatter },
   { href: "/calendario", label: "Calendário", icon: CalendarDays },
   { href: "/relatorios", label: "Relatórios", icon: Receipt },

@@ -242,7 +242,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const senhaNormalizada = senha.replace(/[\u200B-\u200D\uFEFF]/g, "").trim()
     const senhaValida = senhaNormalizada === CREDENCIAL_SENHA
     if (!emailValido || !senhaValida) return false
-    const u = { email: CREDENCIAL_EMAIL, nome: CREDENCIAL_NOME }
+    const salvo = ler<Usuario | null>(CHAVE_USUARIO, null)
+    const u: Usuario = {
+      email: CREDENCIAL_EMAIL,
+      nome: CREDENCIAL_NOME,
+      ...(salvo?.email === CREDENCIAL_EMAIL ? { fotoUrl: salvo.fotoUrl } : {}),
+    }
     setUsuario(u)
     setHidratado(true)
     window.localStorage.setItem(CHAVE_USUARIO, JSON.stringify(u))

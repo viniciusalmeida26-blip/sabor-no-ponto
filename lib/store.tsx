@@ -213,7 +213,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setHidratado(true)
       return
     }
-    setHidratado(false)
+    // A sessão pode entrar imediatamente; os dados do painel carregam em segundo plano.
+    setHidratado(true)
     carregarDados()
       .then((dados) => {
         if (!ativo) return

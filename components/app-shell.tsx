@@ -34,7 +34,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (hidratado && !usuario) router.replace("/")
   }, [hidratado, usuario, router])
 
-  if (!hidratado || !usuario) {
+  if (!usuario) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-background">
         <p className="text-sm text-muted-foreground">Carregando…</p>

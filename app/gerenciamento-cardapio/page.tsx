@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { AppShell } from "@/components/app-shell"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -56,7 +56,7 @@ function ProdutoDialog({ produto, onSave }: { produto: Produto; onSave: (produto
           <DialogDescription>Atualize as informações do item do cardápio.</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4 py-2">
-          <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-2 sm:col-span-2">
               <Label htmlFor={`nome-${produto.id}`}>Nome do item</Label>
               <Input id={`nome-${produto.id}`} value={form.nome} onChange={(event) => setForm({ ...form, nome: event.target.value })} />
@@ -99,7 +99,23 @@ function ProdutoDialog({ produto, onSave }: { produto: Produto; onSave: (produto
 }
 
 export default function GerenciamentoCardapioPage() {
-  const { produtos, atualizarProduto } = useStore()
+  const { produtos, atualizarProduto, configuracaoMarmitaDia, salvarConfiguracaoMarmitaDia } = useStore()
+  const marmitas = produtos.filter((produto) => produto.categoria === "marmita")
+  const [destaque, setDestaque] = useState(configuracaoMarmitaDia)
+
+  useEffect(() => setDestaque(configuracaoMarmitaDia), [configuracaoMarmitaDia])
+
+  const produtoDestaque = marmitas.find((produto) => produto.id === destaque.produtoId) ?? marmitas[0]
+
+  function salvarDestaque() {
+    if (!produtoDestaque) {
+      toast.error("Cadastre uma marmita antes de configurar o destaque.")
+      return
+    }
+    salvarConfiguracaoMarmitaDia({ ...destaque, produtoId: produtoDestaque.id })
+    toast.success("Alterações salvas com sucesso.")
+  }
+
   return (
     <AppShell>
       <div className="flex flex-col gap-6">
@@ -107,6 +123,18 @@ export default function GerenciamentoCardapioPage() {
           <div><p className="text-sm font-medium text-primary">Administração</p><h1 className="text-2xl font-bold tracking-tight text-foreground">Gerenciamento de cardápio</h1><p className="text-sm text-muted-foreground">Edite os produtos, preços e disponibilidade em um só lugar.</p></div>
           <Badge variant="secondary">{produtos.length} produtos</Badge>
         </div>
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="pb-3"><CardTitle className="text-base">Marmita do Dia</CardTitle><CardDescription>Selecione um produto existente e personalize apenas o conteúdo do destaque.</CardDescription></CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="flex flex-col gap-2"><Label>Produto do cardápio</Label><Select value={destaque.produtoId} onValueChange={(produtoId) => setDestaque({ ...destaque, produtoId })}><SelectTrigger className="bg-background"><SelectValue placeholder="Selecione uma marmita" /></SelectTrigger><SelectContent>{marmitas.map((produto) => <SelectItem key={produto.id} value={produto.id}>{produto.nome}</SelectItem>)}</SelectContent></Select></div>
+              <div className="flex flex-col gap-2 sm:col-span-2"><Label htmlFor="nome-marmita-dia">Nome da Marmita do Dia</Label><Input id="nome-marmita-dia" value={destaque.nome} placeholder={produtoDestaque?.nome} onChange={(event) => setDestaque({ ...destaque, nome: event.target.value })} /></div>
+              <div className="flex flex-col gap-2 sm:col-span-2"><Label htmlFor="ingredientes-marmita-dia">Ingredientes</Label><Textarea id="ingredientes-marmita-dia" value={destaque.ingredientes} placeholder="Ex.: arroz, feijão, carne, salada" onChange={(event) => setDestaque({ ...destaque, ingredientes: event.target.value })} rows={2} /><p className="text-xs text-muted-foreground">Separe os ingredientes por vírgulas. Deixe vazio se não houver informação cadastrada.</p></div>
+              <div className="flex flex-col gap-2 sm:col-span-2"><Label htmlFor="descricao-marmita-dia">Descrição do destaque</Label><Textarea id="descricao-marmita-dia" value={destaque.descricao} placeholder={produtoDestaque?.descricao} onChange={(event) => setDestaque({ ...destaque, descricao: event.target.value })} rows={3} /></div>
+            </div>
+            <div className="flex flex-col gap-3 rounded-lg border bg-background/70 p-3 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-3"><img src={produtoDestaque?.imagem || "/images/fundo-marmita.png"} alt="" className="size-14 rounded-lg object-cover shadow-sm" /><div><p className="text-sm font-semibold">Imagem vinculada</p><p className="text-xs text-muted-foreground">Atualizada junto com o produto.</p></div></div><Button type="button" onClick={salvarDestaque}>Salvar alterações</Button></div>
+          </CardContent>
+        </Card>
         <div className="grid gap-4 sm:grid-cols-2">
           {produtos.map((produto) => (
             <Card key={produto.id} className="overflow-hidden">

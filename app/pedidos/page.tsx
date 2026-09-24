@@ -16,7 +16,6 @@ import {
   useStore,
   rotuloStatus,
   rotuloForma,
-  produtos,
   totalPedido,
   formatarBRL,
   type StatusPedido,
@@ -83,18 +82,19 @@ function horaFormatada(iso: string) {
   })
 }
 
-const marmitas = produtos.filter((p) => p.categoria === "marmita")
-const bebidas = produtos.filter((p) => p.categoria === "bebida")
-
 export default function PedidosPage() {
   const {
     pedidos,
+    produtos,
     addPedido,
     removePedido,
     atualizarStatusPedido,
     ultimoResetPedidos,
     resetarPedidosEntregues,
   } = useStore()
+
+  const marmitas = produtos.filter((produto) => produto.categoria === "marmita")
+  const bebidas = produtos.filter((produto) => produto.categoria === "bebida")
 
   const [cliente, setCliente] = useState("")
   const [dialogResetAberto, setDialogResetAberto] = useState(false)
@@ -248,7 +248,7 @@ export default function PedidosPage() {
                   Confirmar reset diário
                 </DialogTitle>
                 <DialogDescription>
-                  Os pedidos entregues sairão da fila atual, mas suas vendas continuarão no histórico e nos relatórios. Pedidos pendentes e em preparo não serão alterados.
+                  Os pedidos entregues sairão da fila atual, mas suas vendas continuarão no histórico e nos relatórios. Pedidos pendentes e em preparo não ser��o alterados.
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>

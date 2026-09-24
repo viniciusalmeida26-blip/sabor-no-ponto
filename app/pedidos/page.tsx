@@ -4,6 +4,15 @@ import { useMemo, useState } from "react"
 import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import {
   useStore,
   rotuloStatus,
   rotuloForma,
@@ -30,6 +39,8 @@ import {
   Play,
   Send,
   PackageCheck,
+  RefreshCw,
+  AlertTriangle,
 } from "lucide-react"
 
 const statusInfo: {
@@ -76,9 +87,18 @@ const marmitas = produtos.filter((p) => p.categoria === "marmita")
 const bebidas = produtos.filter((p) => p.categoria === "bebida")
 
 export default function PedidosPage() {
-  const { pedidos, addPedido, removePedido, atualizarStatusPedido } = useStore()
+  const {
+    pedidos,
+    addPedido,
+    removePedido,
+    atualizarStatusPedido,
+    ultimoResetPedidos,
+    resetarPedidosEntregues,
+  } = useStore()
 
   const [cliente, setCliente] = useState("")
+  const [dialogResetAberto, setDialogResetAberto] = useState(false)
+  const [resetando, setResetando] = useState(false)
   const [observacao, setObservacao] = useState("")
   const [forma, setForma] = useState<FormaPagamento>("dinheiro")
   const [quantidades, setQuantidades] = useState<Record<string, number>>({})
@@ -128,6 +148,16 @@ export default function PedidosPage() {
     setObservacao("")
     setForma("dinheiro")
     setQuantidades({})
+  }
+
+  async function confirmarReset() {
+    setResetando(true)
+    try {
+      await resetarPedidosEntregues()
+      setDialogResetAberto(false)
+    } finally {
+      setResetando(false)
+    }
   }
 
   function CartaoProduto({
@@ -186,6 +216,51 @@ export default function PedidosPage() {
             registrada automaticamente.
           </p>
         </div>
+
+        <section className="flex flex-col gap-4 rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between" aria-labelledby="reset-pedidos-title">
+          <div className="flex items-start gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <RefreshCw className="size-5" aria-hidden="true" />
+            </div>
+            <div>
+              <h2 id="reset-pedidos-title" className="text-sm font-semibold text-foreground">Fechamento diário</h2>
+              <p className="text-xs text-muted-foreground">
+                Pedidos entregues são mantidos nas vendas e retirados da fila após o reset.
+              </p>
+              <p className="mt-1 text-xs font-medium text-primary">
+                {ultimoResetPedidos
+                  ? `Último reset: ${new Date(ultimoResetPedidos).toLocaleString("pt-BR")}`
+                  : "Ainda não houve reset registrado"}
+              </p>
+            </div>
+          </div>
+          <Dialog open={dialogResetAberto} onOpenChange={setDialogResetAberto}>
+            <DialogTrigger asChild>
+              <Button type="button" variant="outline" className="shrink-0 border-primary/30 bg-background">
+                <RefreshCw className="size-4" aria-hidden="true" />
+                Resetar pedidos do dia
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <AlertTriangle className="size-5 text-primary" aria-hidden="true" />
+                  Confirmar reset diário
+                </DialogTitle>
+                <DialogDescription>
+                  Os pedidos entregues sairão da fila atual, mas suas vendas continuarão no histórico e nos relatórios. Pedidos pendentes e em preparo não serão alterados.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setDialogResetAberto(false)} disabled={resetando}>Cancelar</Button>
+                <Button type="button" onClick={confirmarReset} disabled={resetando}>
+                  <RefreshCw className={`size-4 ${resetando ? "animate-spin" : ""}`} aria-hidden="true" />
+                  {resetando ? "Resetando..." : "Confirmar reset"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </section>
 
         <form
           onSubmit={handleSubmit}

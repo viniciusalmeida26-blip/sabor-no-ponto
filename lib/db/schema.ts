@@ -40,3 +40,8 @@ export const pedidos = pgTable("pedidos", {
   vendaRegistrada: boolean("venda_registrada").notNull().default(false),
   data: timestamp("data", { withTimezone: true }).notNull().defaultNow(),
 })
+
+export const pedidoResets = pgTable("pedido_resets", {
+  id: integer("id").primaryKey().default(1),
+  resetAt: timestamp("reset_at", { withTimezone: true }).notNull().defaultNow(),
+})

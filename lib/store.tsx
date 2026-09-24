@@ -16,6 +16,7 @@ import {
   criarPedido,
   excluirPedido,
   mudarStatusPedido,
+  resetarPedidosEntregues as resetarPedidosEntreguesNoBanco,
 } from "@/app/actions/dados"
 
 export type FormaPagamento = "dinheiro" | "cartao" | "pix"
@@ -55,9 +56,9 @@ export const produtos: Produto[] = [
   { id: "marmita-p", nome: "Marmita P", descricao: "Arroz, feijão e mistura do dia", preco: 15, categoria: "marmita", imagem: "/images/fundo-marmita.png", disponivel: true },
   { id: "marmita-m", nome: "Marmita M", descricao: "Arroz, feijão e mistura do dia", preco: 18, categoria: "marmita", imagem: "/images/fundo-marmita.png", disponivel: true },
   { id: "marmita-g", nome: "Marmita G", descricao: "Arroz, feijão e mistura do dia", preco: 25, categoria: "marmita", imagem: "/images/fundo-marmita.png", disponivel: true },
-  { id: "refrigerante-lata", nome: "Refrigerante Lata", descricao: "Refrigerante gelado", preco: 6, categoria: "bebida", imagem: "", disponivel: true },
-  { id: "suco-natural", nome: "Suco Natural", descricao: "Suco natural da casa", preco: 8, categoria: "bebida", imagem: "", disponivel: true },
-  { id: "agua-mineral", nome: "Água Mineral", descricao: "Água mineral sem gás", preco: 4, categoria: "bebida", imagem: "", disponivel: true },
+  { id: "refrigerante-lata", nome: "Refrigerante Lata", descricao: "Refrigerante gelado", preco: 6, categoria: "bebida", imagem: "/images/bebida-refrigerante.png", disponivel: true },
+  { id: "suco-natural", nome: "Suco Natural", descricao: "Suco natural da casa", preco: 8, categoria: "bebida", imagem: "/images/bebida-suco.png", disponivel: true },
+  { id: "agua-mineral", nome: "Água Mineral", descricao: "Água mineral sem gás", preco: 4, categoria: "bebida", imagem: "/images/bebida-agua.png", disponivel: true },
 ]
 
 export type ItemPedido = {
@@ -118,6 +119,8 @@ type StoreContextType = {
   ) => void
   removePedido: (id: string) => void
   atualizarStatusPedido: (id: string, status: StatusPedido) => void
+  ultimoResetPedidos: string | null
+  resetarPedidosEntregues: () => Promise<string>
 }
 
 const StoreContext = createContext<StoreContextType | null>(null)
@@ -140,12 +143,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [despesas, setDespesas] = useState<Despesa[]>([])
   const [pedidos, setPedidos] = useState<Pedido[]>([])
   const [catalogo, setCatalogo] = useState<Produto[]>(produtos)
+  const [ultimoResetPedidos, setUltimoResetPedidos] = useState<string | null>(null)
   const [hidratado, setHidratado] = useState(false)
 
   // Sessão (login fixo) fica no dispositivo; os dados vêm do banco.
   useEffect(() => {
     setUsuario(ler<Usuario | null>(CHAVE_USUARIO, null))
-    setCatalogo(ler<Produto[]>("snp_catalogo", produtos))
+    const salvo = ler<Produto[]>("snp_catalogo", produtos)
+    setCatalogo(salvo.map((item) => {
+      const padrao = produtos.find((produto) => produto.id === item.id)
+      return padrao && !item.imagem ? { ...item, imagem: padrao.imagem } : item
+    }))
   }, [])
 
   function atualizarProduto(produto: Produto) {
@@ -174,6 +182,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setVendas(dados.vendas)
         setDespesas(dados.despesas)
         setPedidos(dados.pedidos)
+        setUltimoResetPedidos(dados.ultimoReset)
       })
       .catch((e) => {
         console.log("[v0] erro ao carregar dados:", e)
@@ -258,6 +267,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function resetarPedidosEntregues() {
+    const data = await resetarPedidosEntreguesNoBanco()
+    setPedidos((atual) => atual.filter((pedido) => pedido.status !== "entregue"))
+    setUltimoResetPedidos(data)
+    return data
+  }
+
   async function atualizarStatusPedido(id: string, status: StatusPedido) {
     // Atualiza o status na tela imediatamente.
     setPedidos((atual) =>
@@ -292,6 +308,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         produtos: catalogo,
         atualizarProduto,
         hidratado,
+        ultimoResetPedidos,
+        resetarPedidosEntregues,
         login,
         logout,
         addVenda,

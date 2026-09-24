@@ -5,6 +5,7 @@ import {
   vendas as tVendas,
   despesas as tDespesas,
   pedidos as tPedidos,
+  pedidoResets as tPedidoResets,
   type ItemPedido,
 } from "@/lib/db/schema"
 import { and, desc, eq } from "drizzle-orm"
@@ -39,21 +40,49 @@ export type Pedido = {
   data: string
 }
 
+export type ResetPedidos = {
+  data: string | null
+}
+
 function gerarId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
 }
 
 // ---------- Leitura ----------
 
+export async function resetarPedidosEntregues(): Promise<string> {
+  const agora = new Date()
+  await db.delete(tPedidos).where(eq(tPedidos.status, "entregue"))
+  await db
+    .insert(tPedidoResets)
+    .values({ id: 1, resetAt: agora })
+    .onConflictDoUpdate({ target: tPedidoResets.id, set: { resetAt: agora } })
+  return agora.toISOString()
+}
+
+async function garantirResetDiario() {
+  const [ultimo] = await db.select().from(tPedidoResets).where(eq(tPedidoResets.id, 1))
+  if (!ultimo) return null
+  const agora = new Date()
+  const ultimoDia = ultimo.resetAt.toLocaleDateString("pt-BR")
+  if (ultimoDia !== agora.toLocaleDateString("pt-BR")) {
+    return resetarPedidosEntregues()
+  }
+  return ultimo.resetAt.toISOString()
+}
+
 export async function carregarDados(): Promise<{
   vendas: Venda[]
   despesas: Despesa[]
   pedidos: Pedido[]
+  ultimoReset: string | null
 }> {
-  const [linhasVendas, linhasDespesas, linhasPedidos] = await Promise.all([
+  const resetAutomatico = await garantirResetDiario()
+  const [linhasVendas, linhasDespesas, linhasPedidos, reset] = await Promise.all([
     db.select().from(tVendas).orderBy(desc(tVendas.data)),
     db.select().from(tDespesas).orderBy(desc(tDespesas.data)),
     db.select().from(tPedidos).orderBy(desc(tPedidos.data)),
+    db.select().from(tPedidoResets).where(eq(tPedidoResets.id, 1)),
   ])
 
   return {
@@ -81,7 +110,13 @@ export async function carregarDados(): Promise<{
       vendaRegistrada: p.vendaRegistrada,
       data: p.data.toISOString(),
     })),
+    ultimoReset: resetAutomatico ?? reset[0]?.resetAt.toISOString() ?? null,
   }
+}
+
+export async function obterUltimoReset() {
+  const [reset] = await db.select().from(tPedidoResets).where(eq(tPedidoResets.id, 1))
+  return reset?.resetAt.toISOString() ?? null
 }
 
 // ---------- Vendas ----------

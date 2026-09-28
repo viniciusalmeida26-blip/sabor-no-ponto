@@ -8,11 +8,12 @@ export default function VendasPage() {
   const { vendas, produtos, marmitaDoDiaId, configuracaoMarmitaDia } = useStore()
   const marmitas = produtos.filter((produto) => produto.categoria === "marmita")
   const marmitaDoDia = produtos.find((produto) => produto.id === marmitaDoDiaId) ?? marmitas[0]
-  const hoje = new Date().toISOString().slice(0, 10)
-  const vendasHoje = vendas.filter((venda) => venda.data.slice(0, 10) === hoje)
+  const hoje = new Date()
+  const chaveHoje = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-${String(hoje.getDate()).padStart(2, "0")}`
+  const vendasHoje = vendas.filter((venda) => venda.data.slice(0, 10) === chaveHoje)
   const faturamentoHoje = vendasHoje.reduce((total, venda) => total + venda.quantidade * venda.valorUnitario, 0)
   const unidadesHoje = vendasHoje.reduce((total, venda) => total + venda.quantidade, 0)
-  const dataFormatada = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long" }).format(new Date())
+  const dataFormatada = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long" }).format(hoje)
 
   return (
     <AppShell>

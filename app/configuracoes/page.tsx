@@ -149,7 +149,7 @@ export default function ConfiguracoesPage() {
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold text-foreground">Conta</h2>
 
-          <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
+          <div className="flex flex-col items-start gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm sm:flex-row sm:items-center">
             <button type="button" onClick={() => inputFotoRef.current?.click()} disabled={enviandoFoto} className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="Alterar foto de perfil">
               <EmailAvatar
                 email={usuario?.email || ""}
@@ -172,7 +172,7 @@ export default function ConfiguracoesPage() {
                 <button type="button" onClick={() => inputFotoRef.current?.click()} disabled={enviandoFoto} className="text-xs font-medium text-primary hover:underline">{enviandoFoto ? "Processando…" : "Alterar foto"}</button>
                 {usuario?.fotoUrl && <button type="button" onClick={removerFoto} disabled={enviandoFoto} className="text-xs font-medium text-destructive hover:underline">Remover foto</button>}
               </div>
-              {erroFoto && <p className="text-xs text-destructive">{erroFoto}</p>}
+              {erroFoto && <p role="alert" className="mt-2 text-xs text-destructive">{erroFoto}</p>}
             </div>
           </div>
 

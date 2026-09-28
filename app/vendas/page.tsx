@@ -2,20 +2,31 @@
 
 import { AppShell } from "@/components/app-shell"
 import { formatarBRL, useStore } from "@/lib/store"
-import { Soup } from "lucide-react"
+import { CalendarDays, ShoppingBag, Soup, TrendingUp } from "lucide-react"
 
 export default function VendasPage() {
   const { vendas, produtos, marmitaDoDiaId, configuracaoMarmitaDia } = useStore()
   const marmitas = produtos.filter((produto) => produto.categoria === "marmita")
   const marmitaDoDia = produtos.find((produto) => produto.id === marmitaDoDiaId) ?? marmitas[0]
+  const hoje = new Date().toISOString().slice(0, 10)
+  const vendasHoje = vendas.filter((venda) => venda.data.slice(0, 10) === hoje)
+  const faturamentoHoje = vendasHoje.reduce((total, venda) => total + venda.quantidade * venda.valorUnitario, 0)
+  const unidadesHoje = vendasHoje.reduce((total, venda) => total + venda.quantidade, 0)
+  const dataFormatada = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long" }).format(new Date())
 
   return (
     <AppShell>
       <div className="flex flex-col gap-6">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-foreground">Início</h1>
-          <p className="text-sm text-muted-foreground">Confira o cardápio do dia.</p>
+          <p className="mt-1 flex items-center gap-2 text-sm capitalize text-muted-foreground"><CalendarDays className="size-4" aria-hidden="true" />{dataFormatada}</p>
         </div>
+
+        <section aria-label="Indicadores do dia" className="grid gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm"><div className="flex items-center justify-between"><p className="text-sm text-muted-foreground">Faturamento hoje</p><TrendingUp className="size-4 text-primary" aria-hidden="true" /></div><p className="mt-2 text-2xl font-bold tracking-tight text-foreground">{formatarBRL(faturamentoHoje)}</p></div>
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm"><div className="flex items-center justify-between"><p className="text-sm text-muted-foreground">Vendas registradas</p><ShoppingBag className="size-4 text-primary" aria-hidden="true" /></div><p className="mt-2 text-2xl font-bold tracking-tight text-foreground">{vendasHoje.length}</p></div>
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm"><div className="flex items-center justify-between"><p className="text-sm text-muted-foreground">Marmitas vendidas</p><Soup className="size-4 text-primary" aria-hidden="true" /></div><p className="mt-2 text-2xl font-bold tracking-tight text-foreground">{unidadesHoje}</p></div>
+        </section>
 
         <section className="relative min-h-[340px] overflow-hidden rounded-2xl border border-border bg-primary shadow-sm">
           <img src={marmitaDoDia?.imagem || "/images/fundo-marmita.png"} alt={marmitaDoDia?.nome || "Marmita do cardápio do dia"} className="absolute inset-0 h-full w-full object-cover" />
@@ -30,8 +41,8 @@ export default function VendasPage() {
         </section>
 
 
-        <section aria-label="Preços das marmitas" className="grid gap-3 sm:grid-cols-3">
-          {marmitas.map((produto) => <div key={produto.id} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 shadow-sm"><div className="min-w-0"><p className="truncate text-xs text-muted-foreground">{produto.nome}</p><p className="mt-1 text-2xl font-bold text-foreground">{formatarBRL(produto.preco)}</p></div><img src={produto.imagem} alt="" className="size-12 rounded-lg object-cover shadow-sm" /></div>)}
+        <section aria-label="Preços das marmitas" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {marmitas.length > 0 ? marmitas.map((produto) => <div key={produto.id} className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm"><div className="min-w-0"><p className="truncate text-xs text-muted-foreground">{produto.nome}</p><p className="mt-1 text-2xl font-bold text-foreground">{formatarBRL(produto.preco)}</p></div><img src={produto.imagem || "/images/fundo-marmita.png"} alt="" className="size-12 rounded-xl object-cover shadow-sm" /></div>) : <div className="rounded-2xl border border-dashed border-border bg-card p-5 text-sm text-muted-foreground sm:col-span-2 xl:col-span-3">Nenhuma marmita cadastrada no cardápio.</div>}
         </section>
 
         <section className="grid gap-3 sm:grid-cols-3" aria-label="Informações do cardápio">

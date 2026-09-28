@@ -40,6 +40,7 @@ import {
   PackageCheck,
   RefreshCw,
   AlertTriangle,
+  Search,
 } from "lucide-react"
 
 const statusInfo: {
@@ -102,6 +103,13 @@ export default function PedidosPage() {
   const [observacao, setObservacao] = useState("")
   const [forma, setForma] = useState<FormaPagamento>("dinheiro")
   const [quantidades, setQuantidades] = useState<Record<string, number>>({})
+  const [busca, setBusca] = useState("")
+
+  const pedidosFiltrados = useMemo(() => {
+    const termo = busca.trim().toLocaleLowerCase("pt-BR")
+    if (!termo) return pedidos
+    return pedidos.filter((pedido) => `${pedido.cliente} ${pedido.id} ${pedido.itens.map((item) => item.descricao).join(" ")}`.toLocaleLowerCase("pt-BR").includes(termo))
+  }, [busca, pedidos])
 
   const pedidosPorStatus = useMemo(
     () =>
@@ -109,8 +117,9 @@ export default function PedidosPage() {
         ...status,
         pedidos: pedidos.filter((pedido) => pedido.status === status.valor),
       })),
-    [pedidos],
+        [pedidosFiltrados],
   )
+
 
   const totalAtual = useMemo(
     () =>
@@ -380,6 +389,10 @@ export default function PedidosPage() {
             <p className="text-sm text-muted-foreground">
               Organize a produção e avance cada pedido com um toque.
             </p>
+          </div>
+          <div className="relative w-full sm:max-w-sm">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+            <input value={busca} onChange={(event) => setBusca(event.target.value)} placeholder="Buscar por cliente ou item..." aria-label="Buscar pedidos" className="h-10 w-full rounded-lg border border-input bg-background pl-9 pr-3 text-sm text-foreground outline-none ring-ring/50 transition focus:border-ring focus:ring-2" />
           </div>
 
           <div className="grid gap-4 lg:grid-cols-3">

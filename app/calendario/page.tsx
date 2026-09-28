@@ -114,7 +114,7 @@ export default function CalendarioPage() {
           </p>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
           <div className="mb-4 flex items-center justify-between">
             <button
               type="button"
@@ -164,8 +164,8 @@ export default function CalendarioPage() {
                   className={`flex aspect-square flex-col items-center justify-center gap-0.5 rounded-lg border text-xs transition ${
                     selecionado
                       ? "border-primary bg-primary/10"
-                      : temVenda
-                        ? "border-border bg-accent/40 hover:border-ring"
+                      :                       temVenda
+                        ? "border-primary/20 bg-primary/5 hover:border-primary"
                         : "border-transparent hover:bg-muted"
                   }`}
                   aria-pressed={selecionado}

@@ -9,6 +9,7 @@ import {
   type ItemPedido,
 } from "@/lib/db/schema"
 import { and, desc, eq } from "drizzle-orm"
+import { usuarios as tUsuarios } from "@/lib/db/schema"
 
 export type FormaPagamento = "dinheiro" | "cartao" | "pix"
 export type StatusPedido = "pendente" | "preparando" | "entregue"
@@ -42,6 +43,24 @@ export type Pedido = {
 
 export type ResetPedidos = {
   data: string | null
+}
+
+export async function obterPerfil(email: string) {
+  const [usuario] = await db
+    .select({ email: tUsuarios.email, nome: tUsuarios.name, fotoUrl: tUsuarios.image })
+    .from(tUsuarios)
+    .where(eq(tUsuarios.email, email))
+    .limit(1)
+  return usuario ?? null
+}
+
+export async function atualizarFotoPerfil(email: string, fotoUrl: string | null) {
+  const [usuario] = await db
+    .update(tUsuarios)
+    .set({ image: fotoUrl })
+    .where(eq(tUsuarios.email, email))
+    .returning({ email: tUsuarios.email, nome: tUsuarios.name, fotoUrl: tUsuarios.image })
+  return usuario ?? null
 }
 
 function gerarId() {

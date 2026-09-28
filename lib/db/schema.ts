@@ -1,4 +1,5 @@
 import {
+  pgSchema,
   pgTable,
   text,
   integer,
@@ -7,6 +8,15 @@ import {
   timestamp,
   jsonb,
 } from "drizzle-orm/pg-core"
+
+const neonAuth = pgSchema("neon_auth")
+
+export const usuarios = neonAuth.table("user", {
+  id: text("id").primaryKey(),
+  email: text("email").notNull(),
+  name: text("name").notNull(),
+  image: text("image"),
+})
 
 export type ItemPedido = {
   descricao: string

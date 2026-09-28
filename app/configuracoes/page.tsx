@@ -67,6 +67,21 @@ export default function ConfiguracoesPage() {
   const [enviandoFoto, setEnviandoFoto] = useState(false)
   const [erroFoto, setErroFoto] = useState("")
 
+  async function removerFoto() {
+    if (!usuario?.email || enviandoFoto) return
+    setErroFoto("")
+    setEnviandoFoto(true)
+    try {
+      const resposta = await fetch("/api/avatar", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: usuario.email }) })
+      if (!resposta.ok) throw new Error("Não foi possível remover a foto.")
+      atualizarFotoPerfil("")
+    } catch (erro) {
+      setErroFoto(erro instanceof Error ? erro.message : "Não foi possível remover a foto.")
+    } finally {
+      setEnviandoFoto(false)
+    }
+  }
+
   async function trocarFoto(evento: ChangeEvent<HTMLInputElement>) {
     const arquivo = evento.target.files?.[0]
     if (!arquivo) return
@@ -74,6 +89,7 @@ export default function ConfiguracoesPage() {
     setEnviandoFoto(true)
     const dados = new FormData()
     dados.append("file", arquivo)
+    dados.append("email", usuario?.email || "")
     try {
       const resposta = await fetch("/api/avatar", { method: "POST", body: dados })
       const texto = await resposta.text()
@@ -152,7 +168,10 @@ export default function ConfiguracoesPage() {
                 <Mail className="size-3.5 shrink-0" aria-hidden="true" />
                 <span className="truncate">{usuario?.email}</span>
               </p>
-              <button type="button" onClick={() => inputFotoRef.current?.click()} disabled={enviandoFoto} className="mt-1 text-xs font-medium text-primary hover:underline">{enviandoFoto ? "Enviando foto…" : "Alterar foto"}</button>
+              <div className="mt-1 flex flex-wrap gap-3">
+                <button type="button" onClick={() => inputFotoRef.current?.click()} disabled={enviandoFoto} className="text-xs font-medium text-primary hover:underline">{enviandoFoto ? "Processando…" : "Alterar foto"}</button>
+                {usuario?.fotoUrl && <button type="button" onClick={removerFoto} disabled={enviandoFoto} className="text-xs font-medium text-destructive hover:underline">Remover foto</button>}
+              </div>
               {erroFoto && <p className="text-xs text-destructive">{erroFoto}</p>}
             </div>
           </div>

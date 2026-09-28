@@ -17,6 +17,7 @@ import {
   excluirPedido,
   mudarStatusPedido,
   resetarPedidosEntregues as resetarPedidosEntreguesNoBanco,
+  obterPerfil,
 } from "@/app/actions/dados"
 
 export type FormaPagamento = "dinheiro" | "cartao" | "pix"
@@ -140,7 +141,6 @@ type StoreContextType = {
 const StoreContext = createContext<StoreContextType | null>(null)
 
 const CHAVE_USUARIO = "snp_usuario"
-const CHAVE_FOTO_PERFIL = "snp_foto_perfil"
 
 function ler<T>(chave: string, padrao: T): T {
   if (typeof window === "undefined") return padrao
@@ -164,7 +164,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // Sessão (login fixo) fica no dispositivo; os dados vêm do banco.
   useEffect(() => {
-    setUsuario(ler<Usuario | null>(CHAVE_USUARIO, null))
+    const usuarioSalvo = ler<Usuario | null>(CHAVE_USUARIO, null)
+    setUsuario(usuarioSalvo)
+    if (usuarioSalvo?.email) {
+      obterPerfil(usuarioSalvo.email)
+        .then((perfil) => {
+          if (!perfil) return
+          setUsuario((atual) => (atual ? { ...atual, nome: perfil.nome, fotoUrl: perfil.fotoUrl ?? undefined } : atual))
+        })
+        .catch((erro) => console.log("[v0] erro ao carregar perfil:", erro))
+    }
     const salvo = ler<Produto[]>("snp_catalogo", produtos)
     const normalizado = [
       ...produtos.map((padrao) => {
@@ -243,12 +252,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const senhaNormalizada = senha.replace(/[\u200B-\u200D\uFEFF]/g, "").trim()
     const senhaValida = senhaNormalizada === CREDENCIAL_SENHA
     if (!emailValido || !senhaValida) return false
-      const fotoSalva = ler<string | null>(CHAVE_FOTO_PERFIL, null)
-      const u: Usuario = {
-        email: CREDENCIAL_EMAIL,
-        nome: CREDENCIAL_NOME,
-        ...(fotoSalva ? { fotoUrl: fotoSalva } : {}),
-      }
+    const u: Usuario = {
+      email: CREDENCIAL_EMAIL,
+      nome: CREDENCIAL_NOME,
+    }
     setUsuario(u)
     setHidratado(true)
     window.localStorage.setItem(CHAVE_USUARIO, JSON.stringify(u))
@@ -259,8 +266,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setUsuario((atual) => {
       if (!atual) return atual
       const atualizado = { ...atual, fotoUrl }
-      window.localStorage.setItem(CHAVE_USUARIO, JSON.stringify(atualizado))
-      window.localStorage.setItem(CHAVE_FOTO_PERFIL, fotoUrl)
       return atualizado
     })
   }

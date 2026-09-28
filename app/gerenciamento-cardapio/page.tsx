@@ -12,11 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { useStore, formatarBRL, type CategoriaProduto, type Produto } from "@/lib/store"
-import { ImageIcon, Pencil, Plus, UtensilsCrossed } from "lucide-react"
+import { ImageIcon, Pencil, Plus, Search, UtensilsCrossed } from "lucide-react"
 import { toast } from "sonner"
 
 const categorias: { value: CategoriaProduto; label: string }[] = [
-  { value: "marmita", label: "Marmitas Traditional" },
+  { value: "marmita", label: "Marmitas tradicionais" },
   { value: "fitness", label: "Marmitas Fitness" },
   { value: "bebida", label: "Bebidas" },
   { value: "sobremesa", label: "Sobremesas" },
@@ -134,6 +134,12 @@ export default function GerenciamentoCardapioPage() {
   const { produtos, adicionarProduto, atualizarProduto, configuracaoMarmitaDia, salvarConfiguracaoMarmitaDia } = useStore()
   const marmitas = produtos.filter((produto) => produto.categoria === "marmita")
   const [destaque, setDestaque] = useState(configuracaoMarmitaDia)
+  const [busca, setBusca] = useState("")
+
+  const produtosFiltrados = produtos.filter((produto) => {
+    const termo = busca.trim().toLocaleLowerCase("pt-BR")
+    return !termo || `${produto.nome} ${produto.descricao} ${categoriaLabel(produto.categoria)}`.toLocaleLowerCase("pt-BR").includes(termo)
+  })
 
   useEffect(() => setDestaque(configuracaoMarmitaDia), [configuracaoMarmitaDia])
 
@@ -167,8 +173,12 @@ export default function GerenciamentoCardapioPage() {
             <div className="flex flex-col gap-3 rounded-lg border bg-background/70 p-3 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-3"><img src={produtoDestaque?.imagem || "/images/fundo-marmita.png"} alt="" className="size-14 rounded-lg object-cover shadow-sm" /><div><p className="text-sm font-semibold">Imagem vinculada</p><p className="text-xs text-muted-foreground">Atualizada junto com o produto.</p></div></div><Button type="button" onClick={salvarDestaque}>Salvar alterações</Button></div>
           </CardContent>
         </Card>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div><h2 className="text-base font-semibold text-foreground">Produtos cadastrados</h2><p className="text-sm text-muted-foreground">{produtosFiltrados.length} de {produtos.length} item(ns) exibido(s).</p></div>
+          <div className="relative w-full sm:max-w-xs"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" /><Input value={busca} onChange={(event) => setBusca(event.target.value)} placeholder="Buscar produto..." aria-label="Buscar produto" className="pl-9" /></div>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          {produtos.map((produto) => (
+          {produtosFiltrados.length === 0 ? <Card className="border-dashed sm:col-span-2"><CardContent className="flex flex-col items-center gap-2 p-10 text-center"><UtensilsCrossed className="size-8 text-muted-foreground" aria-hidden="true" /><p className="font-medium text-foreground">Nenhum produto encontrado</p><p className="text-sm text-muted-foreground">Tente outro termo ou cadastre um novo item.</p></CardContent></Card> : produtosFiltrados.map((produto) => (
             <Card key={produto.id} className="overflow-hidden">
               <div className="relative h-36 bg-muted">
                 {produto.imagem ? <img src={produto.imagem} alt={produto.nome} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-muted-foreground"><UtensilsCrossed /></div>}

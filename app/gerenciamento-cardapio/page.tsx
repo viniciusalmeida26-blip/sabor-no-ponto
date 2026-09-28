@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { useStore, formatarBRL, type CategoriaProduto, type Produto } from "@/lib/store"
-import { ImageIcon, Pencil, Plus } from "lucide-react"
+import { ImageIcon, Pencil, Plus, UtensilsCrossed } from "lucide-react"
 import { toast } from "sonner"
 
 const categorias: { value: CategoriaProduto; label: string }[] = [
@@ -47,8 +47,8 @@ function NovoProdutoDialog({ onSave, trigger }: { onSave: (produto: Omit<Produto
         <div className="flex flex-col gap-2 sm:col-span-2"><Label>Nome do item</Label><Input value={form.nome} onChange={(event) => setForm({ ...form, nome: event.target.value })} /></div>
         <div className="flex flex-col gap-2 sm:col-span-2"><Label>Descrição</Label><Textarea value={form.descricao} onChange={(event) => setForm({ ...form, descricao: event.target.value })} rows={3} /></div>
         <div className="flex flex-col gap-2"><Label>Preço (R$)</Label><Input type="number" min="0" step="0.01" value={form.preco} onChange={(event) => setForm({ ...form, preco: Number(event.target.value) })} /></div>
-        <div className="flex flex-col gap-2"><Label>Categoria</Label><Select value={form.categoria} onValueChange={(categoria: CategoriaProduto) => setForm({ ...form, categoria })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{categorias.map((categoria) => <SelectItem key={categoria.value} value={categoria.value}>{categoria.label}</SelectItem>)}</SelectContent></Select></div>
-        <div className="flex flex-col gap-2 sm:col-span-2"><Label>URL da imagem</Label><Input placeholder="https://... ou /images/..." value={form.imagem} onChange={(event) => setForm({ ...form, imagem: event.target.value })} /></div>
+        <div className="flex flex-col gap-2"><Label>Categoria</Label><Select value={form.categoria} onValueChange={(categoria) => categoria && setForm({ ...form, categoria })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{categorias.map((categoria) => <SelectItem key={categoria.value} value={categoria.value}>{categoria.label}</SelectItem>)}</SelectContent></Select></div>
+        <div className="flex flex-col gap-2 sm:col-span-2"><Label>URL da imagem</Label><Input placeholder="https://... ou /images/..." value={form.imagem ?? ""} onChange={(event) => setForm({ ...form, imagem: event.target.value })} /></div>
         <div className="overflow-hidden rounded-lg border bg-muted sm:col-span-2">{form.imagem ? <img src={form.imagem} alt="Pré-visualização do novo produto" className="h-32 w-full object-cover" /> : <div className="flex h-32 items-center justify-center text-muted-foreground"><ImageIcon /></div>}</div>
       </div>
       <DialogFooter><Button variant="outline" onClick={() => setAberto(false)}>Cancelar</Button><Button onClick={salvar}>Adicionar produto</Button></DialogFooter>
@@ -103,14 +103,14 @@ function ProdutoDialog({ produto, onSave }: { produto: Produto; onSave: (produto
             </div>
             <div className="flex flex-col gap-2">
               <Label>Categoria</Label>
-              <Select value={form.categoria} onValueChange={(value: CategoriaProduto) => setForm({ ...form, categoria: value })}>
+              <Select value={form.categoria} onValueChange={(value) => value && setForm({ ...form, categoria: value })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{categorias.map((categoria) => <SelectItem key={categoria.value} value={categoria.value}>{categoria.label}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="flex flex-col gap-2 sm:col-span-2">
               <Label htmlFor={`imagem-${produto.id}`}>URL da imagem</Label>
-              <Input id={`imagem-${produto.id}`} placeholder="https://..." value={form.imagem} onChange={(event) => setForm({ ...form, imagem: event.target.value })} />
+              <Input id={`imagem-${produto.id}`} placeholder="https://..." value={form.imagem ?? ""} onChange={(event) => setForm({ ...form, imagem: event.target.value })} />
             </div>
             <div className="overflow-hidden rounded-lg border bg-muted sm:col-span-2">
               {form.imagem ? <img src={form.imagem} alt={`Pré-visualização de ${form.nome}`} className="h-32 w-full object-cover" onError={(event) => { event.currentTarget.style.display = "none" }} /> : <div className="flex h-32 items-center justify-center text-muted-foreground"><ImageIcon /></div>}
@@ -159,10 +159,10 @@ export default function GerenciamentoCardapioPage() {
           <CardHeader className="pb-3"><CardTitle className="text-base">Marmita do Dia</CardTitle><CardDescription>Selecione um produto existente e personalize apenas o conteúdo do destaque.</CardDescription></CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="flex flex-col gap-2"><Label>Produto do cardápio</Label><Select value={destaque.produtoId} onValueChange={(produtoId) => setDestaque({ ...destaque, produtoId })}><SelectTrigger className="bg-background"><SelectValue placeholder="Selecione uma marmita" /></SelectTrigger><SelectContent>{marmitas.map((produto) => <SelectItem key={produto.id} value={produto.id}>{produto.nome}</SelectItem>)}</SelectContent></Select></div>
-              <div className="flex flex-col gap-2 sm:col-span-2"><Label htmlFor="nome-marmita-dia">Nome da Marmita do Dia</Label><Input id="nome-marmita-dia" value={destaque.nome} placeholder={produtoDestaque?.nome} onChange={(event) => setDestaque({ ...destaque, nome: event.target.value })} /></div>
+              <div className="flex flex-col gap-2"><Label>Produto do cardápio</Label><Select value={destaque.produtoId ?? ""} onValueChange={(produtoId) => produtoId && setDestaque({ ...destaque, produtoId })}><SelectTrigger className="bg-background"><SelectValue placeholder="Selecione uma marmita" /></SelectTrigger><SelectContent>{marmitas.map((produto) => <SelectItem key={produto.id} value={produto.id}>{produto.nome}</SelectItem>)}</SelectContent></Select></div>
+              <div className="flex flex-col gap-2 sm:col-span-2"><Label htmlFor="nome-marmita-dia">Nome da Marmita do Dia</Label><Input id="nome-marmita-dia" value={destaque.nome} placeholder={produtoDestaque?.nome ?? "Selecione uma marmita"} onChange={(event) => setDestaque({ ...destaque, nome: event.target.value })} /></div>
               <div className="flex flex-col gap-2 sm:col-span-2"><Label htmlFor="ingredientes-marmita-dia">Ingredientes</Label><Textarea id="ingredientes-marmita-dia" value={destaque.ingredientes} placeholder="Ex.: arroz, feijão, carne, salada" onChange={(event) => setDestaque({ ...destaque, ingredientes: event.target.value })} rows={2} /><p className="text-xs text-muted-foreground">Separe os ingredientes por vírgulas. Deixe vazio se não houver informação cadastrada.</p></div>
-              <div className="flex flex-col gap-2 sm:col-span-2"><Label htmlFor="descricao-marmita-dia">Descrição do destaque</Label><Textarea id="descricao-marmita-dia" value={destaque.descricao} placeholder={produtoDestaque?.descricao} onChange={(event) => setDestaque({ ...destaque, descricao: event.target.value })} rows={3} /></div>
+              <div className="flex flex-col gap-2 sm:col-span-2"><Label htmlFor="descricao-marmita-dia">Descrição do destaque</Label><Textarea id="descricao-marmita-dia" value={destaque.descricao} placeholder={produtoDestaque?.descricao ?? "Descrição do destaque"} onChange={(event) => setDestaque({ ...destaque, descricao: event.target.value })} rows={3} /></div>
             </div>
             <div className="flex flex-col gap-3 rounded-lg border bg-background/70 p-3 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-3"><img src={produtoDestaque?.imagem || "/images/fundo-marmita.png"} alt="" className="size-14 rounded-lg object-cover shadow-sm" /><div><p className="text-sm font-semibold">Imagem vinculada</p><p className="text-xs text-muted-foreground">Atualizada junto com o produto.</p></div></div><Button type="button" onClick={salvarDestaque}>Salvar alterações</Button></div>
           </CardContent>

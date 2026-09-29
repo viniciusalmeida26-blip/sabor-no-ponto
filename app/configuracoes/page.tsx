@@ -85,6 +85,17 @@ export default function ConfiguracoesPage() {
   async function trocarFoto(evento: ChangeEvent<HTMLInputElement>) {
     const arquivo = evento.target.files?.[0]
     if (!arquivo) return
+    const tiposPermitidos = ["image/jpeg", "image/png", "image/webp"]
+    if (!tiposPermitidos.includes(arquivo.type)) {
+      setErroFoto("Escolha uma imagem JPG, PNG ou WebP.")
+      evento.target.value = ""
+      return
+    }
+    if (arquivo.size > 5 * 1024 * 1024) {
+      setErroFoto("A imagem deve ter no máximo 5 MB.")
+      evento.target.value = ""
+      return
+    }
     setErroFoto("")
     setEnviandoFoto(true)
     const dados = new FormData()

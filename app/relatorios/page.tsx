@@ -102,7 +102,7 @@ export default function RelatoriosPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm">
           {periodos.map((p) => {
             const ativo = periodo === p.valor
             return (
@@ -124,7 +124,7 @@ export default function RelatoriosPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
             <div className="flex items-center gap-2 text-accent">
               <TrendingUp className="size-4" aria-hidden="true" />
               <span className="text-xs font-medium">Entradas</span>
@@ -133,7 +133,7 @@ export default function RelatoriosPage() {
               {formatarBRL(totalVendas)}
             </p>
           </div>
-          <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
             <div className="flex items-center gap-2 text-destructive">
               <TrendingDown className="size-4" aria-hidden="true" />
               <span className="text-xs font-medium">Saídas</span>
@@ -142,7 +142,7 @@ export default function RelatoriosPage() {
               {formatarBRL(totalDespesas)}
             </p>
           </div>
-          <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
             <div className="flex items-center gap-2 text-primary">
               <Wallet className="size-4" aria-hidden="true" />
               <span className="text-xs font-medium">Lucro</span>
@@ -157,7 +157,7 @@ export default function RelatoriosPage() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-5 shadow-sm">
+        <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5 shadow-sm">
           <h2 className="text-sm font-semibold text-foreground">
             Entradas por forma de pagamento
           </h2>
@@ -220,7 +220,7 @@ export default function RelatoriosPage() {
             </div>
           </form>
 
-          {despesasFiltradas.length > 0 && (
+          {despesasFiltradas.length > 0 ? (
             <ul className="flex flex-col gap-2">
               {despesasFiltradas.map((d) => (
                 <li
@@ -246,7 +246,7 @@ export default function RelatoriosPage() {
                 </li>
               ))}
             </ul>
-          )}
+          ) : <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">Nenhuma despesa registrada neste período.</p>}
         </div>
       </div>
     </AppShell>

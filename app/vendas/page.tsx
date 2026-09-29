@@ -46,7 +46,6 @@ export default function VendasPage() {
           {marmitas.length > 0 ? marmitas.map((produto) => <div key={produto.id} className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm"><div className="min-w-0"><p className="truncate text-xs text-muted-foreground">{produto.nome}</p><p className="mt-1 text-2xl font-bold text-foreground">{formatarBRL(produto.preco)}</p></div><img src={produto.imagem || "/images/fundo-marmita.png"} alt={`Foto de ${produto.nome}`} loading="lazy" className="size-12 rounded-xl object-cover shadow-sm" /></div>) : <div className="rounded-2xl border border-dashed border-border bg-card p-5 text-sm text-muted-foreground sm:col-span-2 xl:col-span-3">Nenhuma marmita cadastrada no cardápio.</div>}
         </section>
 
-        <section aria-label="Resumo do cardápio" className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Resumo do cardápio</p><p className="mt-1 text-sm text-foreground">{marmitas.filter((produto) => produto.disponivel).length} marmita(s) disponível(is) para venda hoje.</p></div><p className="text-sm font-medium text-muted-foreground">Preço médio: <span className="font-bold text-foreground">{marmitas.length ? formatarBRL(marmitas.reduce((total, produto) => total + produto.preco, 0) / marmitas.length) : formatarBRL(0)}</span></p></section>
 
 
       </div>

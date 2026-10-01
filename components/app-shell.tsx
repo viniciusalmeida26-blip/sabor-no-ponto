@@ -14,6 +14,7 @@ import {
   Receipt,
   CookingPot,
   ChefHat,
+  CircleDollarSign,
   UtensilsCrossed,
   LogOut,
 } from "lucide-react"
@@ -24,6 +25,7 @@ const navItems = [
   { href: "/cozinha", label: "Cozinha", icon: ChefHat },
   { href: "/calendario", label: "Calendário", icon: CalendarDays },
   { href: "/relatorios", label: "Relatórios", icon: Receipt },
+  { href: "/financeiro", label: "Financeiro", icon: CircleDollarSign },
   { href: "/gerenciamento-cardapio", label: "Cardápio", icon: UtensilsCrossed },
   { href: "/configuracoes", label: "Config", icon: CookingPot },
 ]

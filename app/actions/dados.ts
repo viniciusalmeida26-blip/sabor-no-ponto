@@ -71,7 +71,8 @@ function gerarId() {
 
 export async function resetarPedidosEntregues(): Promise<string> {
   const agora = new Date()
-  await db.delete(tPedidos).where(eq(tPedidos.status, "entregue"))
+  // O marcador mantém compatibilidade com a rotina existente sem remover
+  // pedidos: o histórico operacional deve permanecer consultável.
   await db
     .insert(tPedidoResets)
     .values({ id: 1, resetAt: agora })
@@ -81,13 +82,7 @@ export async function resetarPedidosEntregues(): Promise<string> {
 
 async function garantirResetDiario() {
   const [ultimo] = await db.select().from(tPedidoResets).where(eq(tPedidoResets.id, 1))
-  if (!ultimo) return null
-  const agora = new Date()
-  const ultimoDia = ultimo.resetAt.toLocaleDateString("pt-BR")
-  if (ultimoDia !== agora.toLocaleDateString("pt-BR")) {
-    return resetarPedidosEntregues()
-  }
-  return ultimo.resetAt.toISOString()
+  return ultimo?.resetAt.toISOString() ?? null
 }
 
 export async function carregarDados(): Promise<{

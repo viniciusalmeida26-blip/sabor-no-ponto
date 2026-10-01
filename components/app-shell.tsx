@@ -31,7 +31,7 @@ const navItems = [
   { href: "/financeiro", label: "Financeiro", icon: CircleDollarSign },
   { href: "/estoque", label: "Estoque", icon: Boxes },
   { href: "/gerenciamento-cardapio", label: "Cardápio", icon: UtensilsCrossed },
-  { href: "/configuracoes", label: "Config", icon: CookingPot },
+  { href: "/configuracoes", label: "Configurações", icon: CookingPot },
 ]
 
 export function AppShell({ children }: { children: ReactNode }) {

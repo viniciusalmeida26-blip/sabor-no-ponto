@@ -79,7 +79,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-24 sm:px-6 lg:px-8 lg:py-8 lg:pb-8">{children}</main>
-        <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card/95 backdrop-blur lg:hidden" aria-label="Navegação principal"><div className="mx-auto flex w-full max-w-2xl">{navItems.map((item) => { const ativo = pathname === item.href; const Icon = item.icon; return <Link key={item.href} href={item.href} aria-current={ativo ? "page" : undefined} className={`flex min-w-0 flex-1 flex-col items-center gap-1 py-3 text-[11px] font-medium transition-colors ${ativo ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}><Icon className="size-5" aria-hidden="true" />{item.label}</Link> })}</div></nav>
+        <nav className="fixed inset-x-0 bottom-0 z-20 overflow-x-auto border-t border-border bg-card/95 backdrop-blur lg:hidden" aria-label="Navegação principal"><div className="mx-auto flex w-max min-w-full max-w-2xl">{navItems.map((item) => { const ativo = pathname === item.href; const Icon = item.icon; return <Link key={item.href} href={item.href} aria-current={ativo ? "page" : undefined} className={`flex min-w-[76px] flex-1 flex-col items-center gap-1 px-2 py-3 text-[11px] font-medium transition-colors ${ativo ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}><Icon className="size-5" aria-hidden="true" />{item.label}</Link> })}</div></nav>
       </div>
     </div>
   )

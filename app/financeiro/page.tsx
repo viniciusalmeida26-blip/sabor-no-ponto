@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { ArrowDownRight, ArrowUpRight, CircleDollarSign, ReceiptText, Wallet } from "lucide-react"
+import { ArrowDownRight, ArrowUpRight, CircleDollarSign, Download, ReceiptText, Wallet } from "lucide-react"
 import { useStore, formatarBRL } from "@/lib/store"
 
 const periodos = [
@@ -13,6 +13,21 @@ const periodos = [
 export default function FinanceiroPage() {
   const { vendas, despesas, pedidos, hidratado } = useStore()
   const [periodo, setPeriodo] = useState("30")
+
+  function exportarCSV() {
+    const linhas = [
+      ["Tipo", "Descrição", "Valor", "Data"],
+      ...dados.vendasFiltradas.map((venda) => ["Entrada", venda.descricao, String(venda.quantidade * venda.valorUnitario), venda.data]),
+      ...dados.despesasFiltradas.map((despesa) => ["Saída", despesa.descricao, String(-despesa.valor), despesa.data]),
+    ]
+    const csv = linhas.map((linha) => linha.map((valor) => `"${valor.replaceAll('"', '""')}"`).join(",")).join("\n")
+    const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" }))
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `sabor-no-ponto-financeiro-${periodo}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
 
   const dados = useMemo(() => {
     const limite = periodo === "all" ? 0 : Date.now() - Number(periodo) * 86400000
@@ -31,7 +46,7 @@ export default function FinanceiroPage() {
     <div className="space-y-8">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div><p className="text-sm font-medium text-primary">Gestão</p><h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Financeiro</h1><p className="mt-2 text-sm text-muted-foreground">Acompanhe entradas, despesas e resultado com base nos registros reais.</p></div>
-        <select value={periodo} onChange={(event) => setPeriodo(event.target.value)} aria-label="Período financeiro" className="h-10 rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring/50">{periodos.map((item) => <option key={item.valor} value={item.valor}>{item.label}</option>)}</select>
+        <div className="flex flex-col gap-2 sm:flex-row"><select value={periodo} onChange={(event) => setPeriodo(event.target.value)} aria-label="Período financeiro" className="h-10 rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring/50">{periodos.map((item) => <option key={item.valor} value={item.valor}>{item.label}</option>)}</select><button type="button" onClick={exportarCSV} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-input bg-background px-3 text-sm font-medium text-foreground transition hover:bg-muted"><Download className="size-4" aria-hidden="true" />Exportar CSV</button></div>
       </header>
 
       <section aria-label="Resumo financeiro" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">

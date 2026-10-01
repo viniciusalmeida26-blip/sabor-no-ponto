@@ -62,6 +62,12 @@ const statusInfo: {
     classe: "border-violet-200 bg-violet-50 text-violet-800 dark:border-violet-900/60 dark:bg-violet-950/30 dark:text-violet-200",
   },
   {
+    valor: "pronta",
+    label: "Pronta",
+    icon: PackageCheck,
+    classe: "border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/30 dark:text-sky-200",
+  },
+  {
     valor: "entregue",
     label: "Entregue",
     icon: CheckCircle2,
@@ -423,9 +429,9 @@ export default function PedidosPage() {
                       </li>
                     ) : (
                       coluna.pedidos.map((p) => {
-                        const proximoStatus = p.status === "pendente" ? "preparando" : p.status === "preparando" ? "entregue" : null
-                        const acao = p.status === "pendente" ? "Iniciar preparo" : p.status === "preparando" ? "Enviar para entrega" : null
-                        const AcaoIcon = p.status === "pendente" ? Play : p.status === "preparando" ? Send : PackageCheck
+                        const proximoStatus = p.status === "pendente" ? "preparando" : p.status === "preparando" ? "pronta" : p.status === "pronta" ? "entregue" : null
+                        const acao = p.status === "pendente" ? "Iniciar preparo" : p.status === "preparando" ? "Marcar como pronta" : p.status === "pronta" ? "Marcar como entregue" : null
+                        const AcaoIcon = p.status === "pendente" ? Play : p.status === "preparando" ? PackageCheck : p.status === "pronta" ? Send : CheckCircle2
                         return (
                           <li key={p.id} className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
                             <div className="flex items-start justify-between gap-3">

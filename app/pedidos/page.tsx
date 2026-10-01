@@ -73,6 +73,12 @@ const statusInfo: {
     icon: CheckCircle2,
     classe: "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200",
   },
+  {
+    valor: "cancelado",
+    label: "Cancelado",
+    icon: AlertTriangle,
+    classe: "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-200",
+  },
 ]
 
 const formas: { valor: FormaPagamento; label: string; icon: typeof Banknote }[] =
@@ -121,9 +127,9 @@ export default function PedidosPage() {
     () =>
       statusInfo.map((status) => ({
         ...status,
-        pedidos: pedidos.filter((pedido) => pedido.status === status.valor),
+        pedidos: pedidosFiltrados.filter((pedido) => pedido.status === status.valor),
       })),
-        [pedidosFiltrados],
+    [pedidosFiltrados],
   )
 
 
@@ -480,8 +486,8 @@ export default function PedidosPage() {
                                 {acao}
                               </Button>
                             ) : (
-                              <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
-                                <AcaoIcon className="size-4" aria-hidden="true" /> Pedido concluído
+                              <div className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium ${p.status === "cancelado" ? "bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300" : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"}`}>
+                                <AcaoIcon className="size-4" aria-hidden="true" /> {p.status === "cancelado" ? "Pedido cancelado" : "Pedido concluído"}
                               </div>
                             )}
                           </li>

@@ -12,7 +12,7 @@ import { and, desc, eq } from "drizzle-orm"
 import { usuarios as tUsuarios } from "@/lib/db/schema"
 
 export type FormaPagamento = "dinheiro" | "cartao" | "pix"
-export type StatusPedido = "pendente" | "preparando" | "pronta" | "entregue"
+export type StatusPedido = "pendente" | "preparando" | "pronta" | "entregue" | "cancelado"
 
 export type Venda = {
   id: string

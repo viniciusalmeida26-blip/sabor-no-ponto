@@ -38,7 +38,7 @@ export type Despesa = {
   data: string // ISO
 }
 
-export type StatusPedido = "pendente" | "preparando" | "pronta" | "entregue"
+export type StatusPedido = "pendente" | "preparando" | "pronta" | "entregue" | "cancelado"
 
 export type CategoriaProduto = "marmita" | "bebida" | "sobremesa" | "fitness"
 
@@ -419,6 +419,7 @@ export const rotuloStatus: Record<StatusPedido, string> = {
   preparando: "Preparando",
   pronta: "Pronta",
   entregue: "Entregue",
+  cancelado: "Cancelado",
 }
 
 // Chave "AAAA-MM-DD" no fuso local, usada para agrupar registros por dia.

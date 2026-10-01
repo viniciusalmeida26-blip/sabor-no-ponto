@@ -12,7 +12,7 @@ import { and, desc, eq } from "drizzle-orm"
 import { usuarios as tUsuarios } from "@/lib/db/schema"
 
 export type FormaPagamento = "dinheiro" | "cartao" | "pix"
-export type StatusPedido = "pendente" | "preparando" | "entregue"
+export type StatusPedido = "pendente" | "preparando" | "pronta" | "entregue" | "cancelado"
 
 export type Venda = {
   id: string
@@ -223,20 +223,22 @@ export async function mudarStatusPedido(
   id: string,
   status: StatusPedido,
 ): Promise<{ vendasNovas: Venda[] }> {
-  const [pedido] = await db
-    .select()
-    .from(tPedidos)
-    .where(eq(tPedidos.id, id))
+  const vendasNovas = await db.transaction(async (tx) => {
+    const [pedido] = await tx
+      .select()
+      .from(tPedidos)
+      .where(eq(tPedidos.id, id))
+      .for("update")
 
-  if (!pedido) return { vendasNovas: [] }
+    if (!pedido) return []
 
-  const vendasNovas: Venda[] = []
+    const novas: Venda[] = []
 
-  if (status === "entregue" && !pedido.vendaRegistrada) {
+    if (status === "entregue" && !pedido.vendaRegistrada) {
     for (const item of pedido.itens) {
       const idVenda = gerarId()
       const dataVenda = new Date()
-      await db.insert(tVendas).values({
+      await tx.insert(tVendas).values({
         id: idVenda,
         descricao: item.descricao,
         quantidade: item.quantidade,
@@ -244,7 +246,7 @@ export async function mudarStatusPedido(
         forma: pedido.forma,
         data: dataVenda,
       })
-      vendasNovas.push({
+      novas.push({
         id: idVenda,
         descricao: item.descricao,
         quantidade: item.quantidade,
@@ -255,14 +257,17 @@ export async function mudarStatusPedido(
     }
   }
 
-  await db
-    .update(tPedidos)
-    .set({
-      status,
-      vendaRegistrada:
-        status === "entregue" ? true : pedido.vendaRegistrada,
-    })
-    .where(eq(tPedidos.id, id))
+    await tx
+      .update(tPedidos)
+      .set({
+        status,
+        vendaRegistrada:
+          status === "entregue" ? true : pedido.vendaRegistrada,
+      })
+      .where(eq(tPedidos.id, id))
+
+    return novas
+  })
 
   return { vendasNovas }
 }

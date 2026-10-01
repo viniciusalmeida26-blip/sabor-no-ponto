@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, type ReactNode } from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useStore } from "@/lib/store"
@@ -12,6 +13,10 @@ import {
   CalendarDays,
   Receipt,
   CookingPot,
+  ChefHat,
+  CircleDollarSign,
+  Boxes,
+  Table2,
   UtensilsCrossed,
   LogOut,
 } from "lucide-react"
@@ -19,10 +24,14 @@ import {
 const navItems = [
   { href: "/vendas", label: "Início", icon: Home },
   { href: "/pedidos", label: "Pedidos", icon: HandPlatter },
+  { href: "/mesas", label: "Mesas", icon: Table2 },
+  { href: "/cozinha", label: "Cozinha", icon: ChefHat },
   { href: "/calendario", label: "Calendário", icon: CalendarDays },
   { href: "/relatorios", label: "Relatórios", icon: Receipt },
+  { href: "/financeiro", label: "Financeiro", icon: CircleDollarSign },
+  { href: "/estoque", label: "Estoque", icon: Boxes },
   { href: "/gerenciamento-cardapio", label: "Cardápio", icon: UtensilsCrossed },
-  { href: "/configuracoes", label: "Config", icon: CookingPot },
+  { href: "/configuracoes", label: "Configurações", icon: CookingPot },
 ]
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -46,7 +55,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-dvh bg-background" style={{ backgroundImage: "url(/images/fundo-textura.png)", backgroundSize: "420px", backgroundAttachment: "fixed" }}>
       <aside className="hidden w-64 shrink-0 border-r border-border bg-card/95 px-4 py-5 lg:flex lg:flex-col">
         <div className="flex items-center gap-3 px-2">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm"><UtensilsCrossed className="size-5" aria-hidden="true" /></div>
+          <Image src="/images/logo-sabor-no-ponto.jpg" alt="Logo Marmitaria Sabor no Ponto" width={44} height={44} className="size-11 rounded-full object-cover ring-1 ring-border" priority />
           <div className="leading-tight"><p className="font-bold text-foreground">Sabor no Ponto</p><p className="text-xs text-muted-foreground">Gestão da marmitaria</p></div>
         </div>
         <nav className="mt-8 flex flex-col gap-1" aria-label="Navegação principal">
@@ -65,7 +74,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-10 border-b border-border bg-card/85 backdrop-blur lg:hidden">
           <div className="mx-auto flex w-full items-center justify-between gap-4 px-4 py-3">
-            <div className="flex items-center gap-2"><div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground"><UtensilsCrossed className="size-5" aria-hidden="true" /></div><div className="leading-tight"><p className="text-sm font-bold text-foreground">Sabor no Ponto</p><p className="text-xs text-muted-foreground">Olá, {usuario.nome}</p></div></div>
+            <div className="flex items-center gap-2"><Image src="/images/logo-sabor-no-ponto.jpg" alt="Logo Marmitaria Sabor no Ponto" width={40} height={40} className="size-10 rounded-full object-cover ring-1 ring-border" priority /><div className="leading-tight"><p className="text-sm font-bold text-foreground">Sabor no Ponto</p><p className="text-xs text-muted-foreground">Olá, {usuario.nome}</p></div></div>
             <EmailAvatar email={usuario.email} nome={usuario.nome} fotoUrl={usuario.fotoUrl} size={36} className="ring-2 ring-border" />
           </div>
         </header>

@@ -1,10 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
-import { UtensilsCrossed, LockKeyhole } from "lucide-react"
+import { LockKeyhole } from "lucide-react"
 
 export default function LoginPage() {
   const { usuario, hidratado, login } = useStore()
@@ -84,9 +85,7 @@ export default function LoginPage() {
       >
         <div className="w-full max-w-sm">
           <div className="mb-8 flex flex-col items-center text-center">
-            <div className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
-              <UtensilsCrossed className="size-8" aria-hidden="true" />
-            </div>
+            <Image src="/images/logo-sabor-no-ponto.jpg" alt="Logo Marmitaria Sabor no Ponto" width={96} height={96} className="mb-4 size-24 rounded-full object-cover shadow-md ring-2 ring-white/80" priority />
             <h1 className="text-2xl font-bold tracking-tight text-foreground text-balance">
               Sabor no Ponto
             </h1>

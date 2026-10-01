@@ -15,6 +15,8 @@ import {
   CookingPot,
   ChefHat,
   CircleDollarSign,
+  Boxes,
+  Table2,
   UtensilsCrossed,
   LogOut,
 } from "lucide-react"
@@ -22,10 +24,12 @@ import {
 const navItems = [
   { href: "/vendas", label: "Início", icon: Home },
   { href: "/pedidos", label: "Pedidos", icon: HandPlatter },
+  { href: "/mesas", label: "Mesas", icon: Table2 },
   { href: "/cozinha", label: "Cozinha", icon: ChefHat },
   { href: "/calendario", label: "Calendário", icon: CalendarDays },
   { href: "/relatorios", label: "Relatórios", icon: Receipt },
   { href: "/financeiro", label: "Financeiro", icon: CircleDollarSign },
+  { href: "/estoque", label: "Estoque", icon: Boxes },
   { href: "/gerenciamento-cardapio", label: "Cardápio", icon: UtensilsCrossed },
   { href: "/configuracoes", label: "Config", icon: CookingPot },
 ]

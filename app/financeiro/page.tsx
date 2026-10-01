@@ -16,12 +16,13 @@ export default function FinanceiroPage() {
 
   const dados = useMemo(() => {
     const limite = periodo === "all" ? 0 : Date.now() - Number(periodo) * 86400000
-    const vendasFiltradas = vendas.filter((venda) => !limite || new Date(venda.data).getTime() >= limite)
-    const despesasFiltradas = despesas.filter((despesa) => !limite || new Date(despesa.data).getTime() >= limite)
+    const vendasFiltradas = vendas.filter((venda) => !limite || new Date(venda.data).getTime() >= limite).sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
+    const despesasFiltradas = despesas.filter((despesa) => !limite || new Date(despesa.data).getTime() >= limite).sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
     const entradas = vendasFiltradas.reduce((total, venda) => total + venda.quantidade * venda.valorUnitario, 0)
     const saidas = despesasFiltradas.reduce((total, despesa) => total + despesa.valor, 0)
     const pedidosAtivos = pedidos.filter((pedido) => ["pendente", "preparando", "pronta"].includes(pedido.status)).length
-    return { entradas, saidas, resultado: entradas - saidas, pedidosAtivos, vendasFiltradas, despesasFiltradas }
+    const margem = entradas > 0 ? Math.round(((entradas - saidas) / entradas) * 100) : 0
+    return { entradas, saidas, resultado: entradas - saidas, pedidosAtivos, margem, vendasFiltradas, despesasFiltradas }
   }, [despesas, pedidos, periodo, vendas])
 
   if (!hidratado) return <div className="flex min-h-[50vh] items-center justify-center text-sm text-muted-foreground">Carregando financeiro...</div>
@@ -33,11 +34,12 @@ export default function FinanceiroPage() {
         <select value={periodo} onChange={(event) => setPeriodo(event.target.value)} aria-label="Período financeiro" className="h-10 rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring/50">{periodos.map((item) => <option key={item.valor} value={item.valor}>{item.label}</option>)}</select>
       </header>
 
-      <section aria-label="Resumo financeiro" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section aria-label="Resumo financeiro" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm"><div className="flex items-center justify-between"><p className="text-sm text-muted-foreground">Entradas</p><span className="rounded-lg bg-emerald-500/10 p-2 text-emerald-600"><ArrowUpRight className="size-4" aria-hidden="true" /></span></div><p className="mt-3 text-2xl font-bold text-foreground">{formatarBRL(dados.entradas)}</p></div>
         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm"><div className="flex items-center justify-between"><p className="text-sm text-muted-foreground">Despesas</p><span className="rounded-lg bg-rose-500/10 p-2 text-rose-600"><ArrowDownRight className="size-4" aria-hidden="true" /></span></div><p className="mt-3 text-2xl font-bold text-foreground">{formatarBRL(dados.saidas)}</p></div>
         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm"><div className="flex items-center justify-between"><p className="text-sm text-muted-foreground">Resultado</p><span className="rounded-lg bg-primary/10 p-2 text-primary"><CircleDollarSign className="size-4" aria-hidden="true" /></span></div><p className={`mt-3 text-2xl font-bold ${dados.resultado >= 0 ? "text-foreground" : "text-destructive"}`}>{formatarBRL(dados.resultado)}</p></div>
         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm"><div className="flex items-center justify-between"><p className="text-sm text-muted-foreground">Pedidos em andamento</p><span className="rounded-lg bg-amber-500/10 p-2 text-amber-600"><Wallet className="size-4" aria-hidden="true" /></span></div><p className="mt-3 text-2xl font-bold text-foreground">{dados.pedidosAtivos}</p></div>
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm"><div className="flex items-center justify-between"><p className="text-sm text-muted-foreground">Margem líquida</p><span className="rounded-lg bg-primary/10 p-2 text-primary"><CircleDollarSign className="size-4" aria-hidden="true" /></span></div><p className={`mt-3 text-2xl font-bold ${dados.margem >= 0 ? "text-foreground" : "text-destructive"}`}>{dados.margem}%</p></div>
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">

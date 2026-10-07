@@ -2,7 +2,8 @@
 
 import { AppShell } from "@/components/app-shell"
 import { formatarBRL, useStore } from "@/lib/store"
-import { CalendarDays, ShoppingBag, Soup, TrendingUp } from "lucide-react"
+import Link from "next/link"
+import { CalendarDays, ClipboardPlus, FileText, ShoppingBag, Soup, TrendingUp, Utensils } from "lucide-react"
 
 export default function VendasPage() {
   const { vendas, produtos, marmitaDoDiaId, configuracaoMarmitaDia } = useStore()
@@ -22,6 +23,12 @@ export default function VendasPage() {
           <h1 className="text-xl font-bold tracking-tight text-foreground">Início</h1>
           <p className="mt-1 flex items-center gap-2 text-sm capitalize text-muted-foreground"><CalendarDays className="size-4" aria-hidden="true" />{dataFormatada}</p>
         </div>
+
+        <section aria-label="Ações rápidas" className="grid gap-3 sm:grid-cols-3">
+          <Link href="/pedidos" className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"><span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><ClipboardPlus className="size-5" aria-hidden="true" /></span><span><span className="block text-sm font-semibold text-foreground">Novo pedido</span><span className="block text-xs text-muted-foreground">Acompanhar atendimento</span></span></Link>
+          <Link href="/gerenciamento-cardapio" className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"><span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><Utensils className="size-5" aria-hidden="true" /></span><span><span className="block text-sm font-semibold text-foreground">Gerenciar cardápio</span><span className="block text-xs text-muted-foreground">Produtos e disponibilidade</span></span></Link>
+          <Link href="/relatorios" className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"><span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><FileText className="size-5" aria-hidden="true" /></span><span><span className="block text-sm font-semibold text-foreground">Ver relatórios</span><span className="block text-xs text-muted-foreground">Analisar desempenho</span></span></Link>
+        </section>
 
         <section aria-label="Indicadores do dia" className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-2xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"><div className="flex items-center justify-between"><p className="text-sm text-muted-foreground">Faturamento hoje</p><span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary"><TrendingUp className="size-4" aria-hidden="true" /></span></div><p className="mt-2 text-2xl font-bold tracking-tight text-foreground">{formatarBRL(faturamentoHoje)}</p><p className="mt-1 text-xs text-muted-foreground">Total registrado</p></div>

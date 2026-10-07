@@ -3,10 +3,10 @@
 import { AppShell } from "@/components/app-shell"
 import { formatarBRL, useStore } from "@/lib/store"
 import Link from "next/link"
-import { CalendarDays, ClipboardPlus, FileText, ShoppingBag, Soup, TrendingUp, Utensils } from "lucide-react"
+import { CalendarDays, ClipboardPlus, FileText, ShoppingBag, Soup, TrendingUp, Utensils, Clock3, CheckCircle2 } from "lucide-react"
 
 export default function VendasPage() {
-  const { vendas, produtos, marmitaDoDiaId, configuracaoMarmitaDia } = useStore()
+  const { vendas, produtos, pedidos, marmitaDoDiaId, configuracaoMarmitaDia } = useStore()
   const marmitas = produtos.filter((produto) => produto.categoria === "marmita")
   const marmitaDoDia = produtos.find((produto) => produto.id === marmitaDoDiaId) ?? marmitas[0]
   const hoje = new Date()
@@ -14,6 +14,10 @@ export default function VendasPage() {
   const vendasHoje = vendas.filter((venda) => venda.data.slice(0, 10) === chaveHoje)
   const faturamentoHoje = vendasHoje.reduce((total, venda) => total + venda.quantidade * venda.valorUnitario, 0)
   const unidadesHoje = vendasHoje.reduce((total, venda) => total + venda.quantidade, 0)
+  const pedidosHoje = pedidos.filter((pedido) => pedido.data.slice(0, 10) === chaveHoje)
+  const pedidosEmPreparo = pedidosHoje.filter((pedido) => pedido.status === "preparando").length
+  const pedidosConcluidos = pedidosHoje.filter((pedido) => pedido.status === "entregue").length
+  const ticketMedio = vendasHoje.length ? faturamentoHoje / vendasHoje.length : 0
   const dataFormatada = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long" }).format(hoje)
 
   return (
@@ -30,10 +34,13 @@ export default function VendasPage() {
           <Link href="/relatorios" className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"><span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><FileText className="size-5" aria-hidden="true" /></span><span><span className="block text-sm font-semibold text-foreground">Ver relatórios</span><span className="block text-xs text-muted-foreground">Analisar desempenho</span></span></Link>
         </section>
 
-        <section aria-label="Indicadores do dia" className="grid gap-3 sm:grid-cols-3">
+        <section aria-label="Indicadores do dia" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
           <div className="rounded-2xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"><div className="flex items-center justify-between"><p className="text-sm text-muted-foreground">Faturamento hoje</p><span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary"><TrendingUp className="size-4" aria-hidden="true" /></span></div><p className="mt-2 text-2xl font-bold tracking-tight text-foreground">{formatarBRL(faturamentoHoje)}</p><p className="mt-1 text-xs text-muted-foreground">Total registrado</p></div>
           <div className="rounded-2xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"><div className="flex items-center justify-between"><p className="text-sm text-muted-foreground">Vendas registradas</p><span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary"><ShoppingBag className="size-4" aria-hidden="true" /></span></div><p className="mt-2 text-2xl font-bold tracking-tight text-foreground">{vendasHoje.length}</p><p className="mt-1 text-xs text-muted-foreground">Lançamentos de hoje</p></div>
           <div className="rounded-2xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"><div className="flex items-center justify-between"><p className="text-sm text-muted-foreground">Marmitas vendidas</p><span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary"><Soup className="size-4" aria-hidden="true" /></span></div><p className="mt-2 text-2xl font-bold tracking-tight text-foreground">{unidadesHoje}</p><p className="mt-1 text-xs text-muted-foreground">Unidades comercializadas</p></div>
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"><div className="flex items-center justify-between"><p className="text-sm text-muted-foreground">Em preparo</p><span className="flex size-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600"><Clock3 className="size-4" aria-hidden="true" /></span></div><p className="mt-2 text-2xl font-bold tracking-tight text-foreground">{pedidosEmPreparo}</p><p className="mt-1 text-xs text-muted-foreground">Pedidos de hoje</p></div>
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"><div className="flex items-center justify-between"><p className="text-sm text-muted-foreground">Concluídos</p><span className="flex size-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600"><CheckCircle2 className="size-4" aria-hidden="true" /></span></div><p className="mt-2 text-2xl font-bold tracking-tight text-foreground">{pedidosConcluidos}</p><p className="mt-1 text-xs text-muted-foreground">Pedidos entregues</p></div>
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"><div className="flex items-center justify-between"><p className="text-sm text-muted-foreground">Ticket médio</p><span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary"><TrendingUp className="size-4" aria-hidden="true" /></span></div><p className="mt-2 text-2xl font-bold tracking-tight text-foreground">{formatarBRL(ticketMedio)}</p><p className="mt-1 text-xs text-muted-foreground">Por lançamento</p></div>
         </section>
 
         <section className="relative min-h-[340px] overflow-hidden rounded-2xl border border-border bg-primary shadow-sm">

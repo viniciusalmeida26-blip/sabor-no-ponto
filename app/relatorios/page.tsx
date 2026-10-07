@@ -46,6 +46,8 @@ export default function RelatoriosPage() {
 
   const [descDespesa, setDescDespesa] = useState("")
   const [valorDespesa, setValorDespesa] = useState("")
+  const [erroDespesa, setErroDespesa] = useState("")
+  const [sucessoDespesa, setSucessoDespesa] = useState("")
 
   const vendasFiltradas = useMemo(
     () => vendas.filter((v) => dentroDoPeriodo(v.data, periodo)),
@@ -83,11 +85,21 @@ export default function RelatoriosPage() {
 
   function handleDespesa(e: React.FormEvent) {
     e.preventDefault()
+    setErroDespesa("")
+    setSucessoDespesa("")
     const val = Number(valorDespesa)
-    if (!descDespesa.trim() || !val) return
+    if (!descDespesa.trim()) {
+      setErroDespesa("Informe uma descrição para a despesa.")
+      return
+    }
+    if (!Number.isFinite(val) || val <= 0) {
+      setErroDespesa("Informe um valor maior que zero.")
+      return
+    }
     addDespesa({ descricao: descDespesa.trim(), valor: val })
     setDescDespesa("")
     setValorDespesa("")
+    setSucessoDespesa("Despesa registrada com sucesso.")
   }
 
   return (
@@ -219,6 +231,8 @@ export default function RelatoriosPage() {
               </Button>
             </div>
           </form>
+          {erroDespesa && <p role="alert" className="text-sm text-destructive">{erroDespesa}</p>}
+          {sucessoDespesa && <p role="status" className="text-sm text-accent">{sucessoDespesa}</p>}
 
           {despesasFiltradas.length > 0 ? (
             <ul className="flex flex-col gap-2">

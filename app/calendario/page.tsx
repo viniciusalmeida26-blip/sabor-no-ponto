@@ -78,6 +78,12 @@ export default function CalendarioPage() {
     return soma
   }, [totaisPorDia, anoAtual, mesAtual])
 
+  function irParaHoje() {
+    setMesAtual(hoje.getMonth())
+    setAnoAtual(hoje.getFullYear())
+    setDiaSelecionado(chaveHoje)
+  }
+
   function mudarMes(delta: number) {
     let novoMes = mesAtual + delta
     let novoAno = anoAtual
@@ -108,10 +114,7 @@ export default function CalendarioPage() {
           <h1 className="text-xl font-bold tracking-tight text-foreground">
             Calendário de Vendas
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Veja o total vendido em cada dia. Toque em uma data para os
-            detalhes.
-          </p>
+            <p className="text-sm text-muted-foreground">Veja o total vendido em cada dia. Toque em uma data para os detalhes.</p>
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
@@ -124,9 +127,7 @@ export default function CalendarioPage() {
             >
               <ChevronLeft className="size-4" aria-hidden="true" />
             </button>
-            <p className="text-sm font-semibold text-foreground">
-              {nomesMeses[mesAtual]} de {anoAtual}
-            </p>
+            <div className="flex items-center gap-2"><p className="text-sm font-semibold text-foreground">{nomesMeses[mesAtual]} de {anoAtual}</p><button type="button" onClick={irParaHoje} className="rounded-md border border-input px-2 py-1 text-[11px] font-medium text-muted-foreground transition hover:bg-muted">Hoje</button></div>
             <button
               type="button"
               onClick={() => mudarMes(1)}
@@ -197,6 +198,7 @@ export default function CalendarioPage() {
               Total em {nomesMeses[mesAtual]}
             </p>
             <p className="text-2xl font-bold">{formatarBRL(totalMes)}</p>
+            <p className="mt-1 text-xs opacity-80">{Array.from(totaisPorDia.keys()).filter((chave) => chave.startsWith(`${anoAtual}-${String(mesAtual + 1).padStart(2, "0")}`)).length} dia(s) com vendas</p>
           </div>
         </div>
 

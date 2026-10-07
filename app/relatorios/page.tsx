@@ -13,6 +13,7 @@ import {
   Wallet,
   Plus,
   Trash2,
+  Download,
 } from "lucide-react"
 
 type Periodo = "hoje" | "semana" | "mes"
@@ -80,6 +81,21 @@ export default function RelatoriosPage() {
     return base
   }, [vendasFiltradas])
 
+  function exportarRelatorio() {
+    const linhas = [
+      ["Tipo", "Descrição", "Valor", "Data"],
+      ...vendasFiltradas.map((venda) => ["Entrada", venda.descricao, String(venda.quantidade * venda.valorUnitario), venda.data]),
+      ...despesasFiltradas.map((despesa) => ["Saída", despesa.descricao, String(-despesa.valor), despesa.data]),
+    ]
+    const csv = linhas.map((linha) => linha.map((valor) => `"${valor.replaceAll('"', '""')}"`).join(",")).join("\n")
+    const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" }))
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `sabor-no-ponto-relatorio-${periodo}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   const iconesForma = {
     dinheiro: Banknote,
     cartao: CreditCard,
@@ -108,13 +124,16 @@ export default function RelatoriosPage() {
   return (
     <AppShell>
       <div className="flex flex-col gap-6">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">
-            Relatórios e Fechamento
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Resumo financeiro por período.
-          </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">
+              Relatórios e Fechamento
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Resumo financeiro por período.
+            </p>
+          </div>
+          <Button type="button" variant="outline" onClick={exportarRelatorio} className="w-full gap-2 sm:w-auto"><Download className="size-4" aria-hidden="true" />Exportar CSV</Button>
         </div>
 
         <div className="grid grid-cols-3 gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm">

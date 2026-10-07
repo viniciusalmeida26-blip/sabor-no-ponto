@@ -60,7 +60,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
         <nav className="mt-8 flex flex-col gap-1" aria-label="Navegação principal">
           {navItems.map((item) => {
-            const ativo = pathname === item.href
+            const ativo = pathname === item.href || pathname.startsWith(`${item.href}/`)
             const Icon = item.icon
             return <Link key={item.href} href={item.href} aria-current={ativo ? "page" : undefined} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${ativo ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}><Icon className="size-4" aria-hidden="true" />{item.label}</Link>
           })}
@@ -75,7 +75,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         <header className="sticky top-0 z-10 border-b border-border bg-card/85 backdrop-blur lg:hidden">
           <div className="mx-auto flex w-full items-center justify-between gap-4 px-4 py-3">
             <div className="flex items-center gap-2"><Image src="/images/logo-sabor-no-ponto.jpg" alt="Logo Marmitaria Sabor no Ponto" width={40} height={40} className="size-10 rounded-full object-cover ring-1 ring-border" priority /><div className="leading-tight"><p className="text-sm font-bold text-foreground">Sabor no Ponto</p><p className="text-xs text-muted-foreground">Olá, {usuario.nome}</p></div></div>
-            <EmailAvatar email={usuario.email} nome={usuario.nome} fotoUrl={usuario.fotoUrl} size={36} className="ring-2 ring-border" />
+            <div className="flex items-center gap-2">
+              <EmailAvatar email={usuario.email} nome={usuario.nome} fotoUrl={usuario.fotoUrl} size={36} className="ring-2 ring-border" />
+              <Button variant="ghost" size="icon" aria-label="Sair" onClick={() => { logout(); router.replace("/") }}>
+                <LogOut className="size-4" aria-hidden="true" />
+              </Button>
+            </div>
           </div>
         </header>
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-24 sm:px-6 lg:px-8 lg:py-8 lg:pb-8">{children}</main>

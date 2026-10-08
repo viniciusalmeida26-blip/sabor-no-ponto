@@ -12,9 +12,9 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Sabor no Ponto — Controle Financeiro',
+  title: 'Sabor no Ponto — Marmitaria e Gestão',
   description:
-    'Sistema de controle de vendas, despesas e fechamento de caixa da marmitaria Sabor no Ponto.',
+    'Cardápio, pedidos e gestão profissional da marmitaria Sabor no Ponto.',
   generator: 'v0.app',
   icons: {
     icon: [

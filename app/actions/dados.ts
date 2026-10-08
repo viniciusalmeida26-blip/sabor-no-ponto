@@ -55,6 +55,8 @@ export async function obterPerfil(email: string) {
 }
 
 export async function atualizarFotoPerfil(email: string, fotoUrl: string | null) {
+  if (!email.trim()) throw new Error("E-mail do usuário é obrigatório")
+  if (fotoUrl !== null && fotoUrl.length > 2_000_000) throw new Error("Imagem de perfil muito grande")
   const [usuario] = await db
     .update(tUsuarios)
     .set({ image: fotoUrl })

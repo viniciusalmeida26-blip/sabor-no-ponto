@@ -6,11 +6,14 @@ import { useRouter } from "next/navigation"
 import { useStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { LockKeyhole } from "lucide-react"
+import { BriefcaseBusiness, LockKeyhole, UserRound } from "lucide-react"
 
 export default function LoginPage() {
   const { usuario, hidratado, login } = useStore()
   const router = useRouter()
+  const [tipoAcesso, setTipoAcesso] = useState<"cliente" | "profissional">("profissional")
+  const [nomeCliente, setNomeCliente] = useState("")
+  const [telefoneCliente, setTelefoneCliente] = useState("")
   const [email, setEmail] = useState("")
   const [senha, setSenha] = useState("")
   const [erro, setErro] = useState("")
@@ -22,6 +25,15 @@ export default function LoginPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (tipoAcesso === "cliente") {
+      if (!nomeCliente.trim() || telefoneCliente.replace(/\D/g, "").length < 10) {
+        setErro("Informe seu nome e um telefone válido.")
+        return
+      }
+      window.sessionStorage.setItem("snp_cliente", JSON.stringify({ nome: nomeCliente.trim(), telefone: telefoneCliente.trim() }))
+      router.push("/cardapio")
+      return
+    }
     if (!email.trim() || !senha.trim()) {
       setErro("Preencha e-mail e senha para entrar.")
       return
@@ -96,8 +108,12 @@ export default function LoginPage() {
           </div>
 
           <div className="rounded-2xl border border-border bg-card/95 p-6 shadow-lg backdrop-blur-sm">
+          <div className="mb-5 grid grid-cols-2 gap-2 rounded-xl bg-muted p-1" role="tablist" aria-label="Tipo de acesso">
+            <button type="button" role="tab" aria-selected={tipoAcesso === "cliente"} onClick={() => { setTipoAcesso("cliente"); setErro("") }} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition ${tipoAcesso === "cliente" ? "bg-background text-primary shadow-sm" : "text-muted-foreground"}`}><UserRound className="size-4" aria-hidden="true" />Cliente</button>
+            <button type="button" role="tab" aria-selected={tipoAcesso === "profissional"} onClick={() => { setTipoAcesso("profissional"); setErro("") }} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition ${tipoAcesso === "profissional" ? "bg-background text-primary shadow-sm" : "text-muted-foreground"}`}><BriefcaseBusiness className="size-4" aria-hidden="true" />Profissional</button>
+          </div>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
+            {tipoAcesso === "profissional" && <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="email"
                 className="text-sm font-medium text-foreground"
@@ -113,14 +129,19 @@ export default function LoginPage() {
                 placeholder="davi.oliveira03@escola.pr.gov.br"
                 className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none ring-ring/50 transition focus:border-ring focus:ring-2"
               />
-            </div>
+            </div>}
 
-            <div className="flex flex-col gap-1.5">
+            {tipoAcesso === "cliente" && <div className="flex flex-col gap-1.5">
+              <label htmlFor="nome-cliente" className="text-sm font-medium text-foreground">Nome</label>
+              <input id="nome-cliente" type="text" autoComplete="name" value={nomeCliente} onChange={(e) => setNomeCliente(e.target.value)} placeholder="Seu nome completo" className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none ring-ring/50 transition focus:border-ring focus:ring-2" />
+            </div>}
+
+            {tipoAcesso === "cliente" && <div className="flex flex-col gap-1.5">
               <label htmlFor="telefone" className="text-sm font-medium text-foreground">Telefone</label>
-              <input id="telefone" type="tel" autoComplete="tel" placeholder="(41) 99999-9999" className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none ring-ring/50 transition focus:border-ring focus:ring-2" />
-            </div>
+              <input id="telefone" type="tel" autoComplete="tel" value={telefoneCliente} onChange={(e) => setTelefoneCliente(e.target.value)} placeholder="(41) 99999-9999" className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none ring-ring/50 transition focus:border-ring focus:ring-2" />
+            </div>}
 
-            <div className="flex flex-col gap-1.5">
+            {tipoAcesso === "profissional" && <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="senha"
                 className="text-sm font-medium text-foreground"
@@ -136,7 +157,7 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none ring-ring/50 transition focus:border-ring focus:ring-2"
               />
-            </div>
+            </div>}
 
             {erro && (
               <p className="text-sm text-destructive" role="alert">
@@ -144,9 +165,9 @@ export default function LoginPage() {
               </p>
             )}
 
-              <Button type="submit" size="lg" className="mt-1 w-full" disabled={!email.trim() || !senha.trim() || entrando}>
+              <Button type="submit" size="lg" className="mt-1 w-full" disabled={tipoAcesso === "profissional" ? !email.trim() || !senha.trim() || entrando : !nomeCliente.trim() || telefoneCliente.replace(/\D/g, "").length < 10 || entrando}>
                 <LockKeyhole className="size-4" aria-hidden="true" />
-                {entrando ? "Entrando…" : "Entrar"}
+                {entrando ? "Aguarde…" : tipoAcesso === "cliente" ? "Ver cardápio" : "Entrar"}
               </Button>
             </form>
           </div>

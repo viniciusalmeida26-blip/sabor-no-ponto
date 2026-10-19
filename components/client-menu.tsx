@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { ArrowLeft, CheckCircle2, Minus, Plus, Search, ShoppingBag, Trash2 } from "lucide-react"
 import { formatarBRL, useStore, type FormaPagamento } from "@/lib/store"
 
@@ -20,10 +20,24 @@ export function ClientMenu() {
   const [enviando, setEnviando] = useState(false)
   const [sucesso, setSucesso] = useState(false)
   const [erro, setErro] = useState("")
+  const [carrinhoCarregado, setCarrinhoCarregado] = useState(false)
   const categorias = ["todos", ...Array.from(new Set(produtos.map((produto) => produto.categoria)))]
   const filtrados = useMemo(() => produtos.filter((produto) => produto.disponivel && (categoria === "todos" || produto.categoria === categoria) && `${produto.nome} ${produto.descricao}`.toLowerCase().includes(busca.toLowerCase())), [produtos, categoria, busca])
   const quantidade = carrinho.reduce((total, item) => total + item.quantidade, 0)
   const total = carrinho.reduce((soma, item) => soma + item.preco * item.quantidade, 0)
+  useEffect(() => {
+    try {
+      const salvo = window.sessionStorage.getItem("snp_carrinho")
+      if (salvo) setCarrinho(JSON.parse(salvo) as ItemCarrinho[])
+    } catch (error) {
+      console.log("[v0] erro ao restaurar carrinho:", error)
+    } finally {
+      setCarrinhoCarregado(true)
+    }
+  }, [])
+  useEffect(() => {
+    if (carrinhoCarregado) window.sessionStorage.setItem("snp_carrinho", JSON.stringify(carrinho))
+  }, [carrinho, carrinhoCarregado])
   function adicionar(produto: (typeof produtos)[number]) { setCarrinho((atual) => { const existente = atual.find((item) => item.id === produto.id); return existente ? atual.map((item) => item.id === produto.id ? { ...item, quantidade: item.quantidade + 1 } : item) : [...atual, { id: produto.id, nome: produto.nome, preco: produto.preco, quantidade: 1, imagem: produto.imagem }] }) }
   function alterar(id: string, delta: number) { setCarrinho((atual) => atual.flatMap((item) => item.id === id ? [{ ...item, quantidade: item.quantidade + delta }].filter((novo) => novo.quantidade > 0) : [item])) }
   async function finalizarPedido() {
@@ -33,6 +47,7 @@ export function ClientMenu() {
     try {
       await addPedido({ cliente: cliente.trim(), itens: carrinho.map(({ nome, preco, quantidade, imagem }) => ({ descricao: nome, preco, quantidade, imagem })), observacao: observacao.trim(), forma })
       setCarrinho([])
+      window.sessionStorage.removeItem("snp_carrinho")
       setSucesso(true)
     } catch (error) {
       console.log("[v0] erro ao enviar pedido do cliente:", error)

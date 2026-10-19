@@ -194,11 +194,16 @@ export async function criarPedido(entrada: {
   observacao: string
   forma: FormaPagamento
 }): Promise<Pedido> {
+  const cliente = entrada.cliente.trim()
+  if (!cliente || cliente.length > 120) throw new Error("Nome do cliente inválido")
+  if (!entrada.itens.length || entrada.itens.length > 50) throw new Error("Itens do pedido inválidos")
+  if (entrada.itens.some((item) => !item.descricao.trim() || !Number.isInteger(item.quantidade) || item.quantidade < 1 || item.quantidade > 99 || !Number.isFinite(item.preco) || item.preco < 0)) throw new Error("Dados dos itens inválidos")
+  if (entrada.observacao.length > 500) throw new Error("Observação muito longa")
   const id = gerarId()
   const data = new Date()
   await db.insert(tPedidos).values({
     id,
-    cliente: entrada.cliente,
+    cliente,
     itens: entrada.itens,
     observacao: entrada.observacao,
     forma: entrada.forma,
@@ -212,6 +217,7 @@ export async function criarPedido(entrada: {
     status: "pendente",
     vendaRegistrada: false,
     ...entrada,
+    cliente,
   }
 }
 

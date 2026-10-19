@@ -15,6 +15,7 @@ export function ClientMenu() {
   const [carrinho, setCarrinho] = useState<ItemCarrinho[]>([])
   const [aberto, setAberto] = useState(false)
   const [cliente, setCliente] = useState("")
+  const [telefone, setTelefone] = useState("")
   const [forma, setForma] = useState<FormaPagamento>("pix")
   const [observacao, setObservacao] = useState("")
   const [enviando, setEnviando] = useState(false)
@@ -41,11 +42,11 @@ export function ClientMenu() {
   function adicionar(produto: (typeof produtos)[number]) { setCarrinho((atual) => { const existente = atual.find((item) => item.id === produto.id); return existente ? atual.map((item) => item.id === produto.id ? { ...item, quantidade: item.quantidade + 1 } : item) : [...atual, { id: produto.id, nome: produto.nome, preco: produto.preco, quantidade: 1, imagem: produto.imagem }] }) }
   function alterar(id: string, delta: number) { setCarrinho((atual) => atual.flatMap((item) => item.id === id ? [{ ...item, quantidade: item.quantidade + delta }].filter((novo) => novo.quantidade > 0) : [item])) }
   async function finalizarPedido() {
-    if (!cliente.trim() || carrinho.length === 0 || enviando) return
+    if (!cliente.trim() || telefone.replace(/\D/g, "").length < 10 || carrinho.length === 0 || enviando) return
     setErro("")
     setEnviando(true)
     try {
-      await addPedido({ cliente: cliente.trim(), itens: carrinho.map(({ nome, preco, quantidade, imagem }) => ({ descricao: nome, preco, quantidade, imagem })), observacao: observacao.trim(), forma })
+      await addPedido({ cliente: cliente.trim(), itens: carrinho.map(({ nome, preco, quantidade, imagem }) => ({ descricao: nome, preco, quantidade, imagem })), observacao: `Telefone: ${telefone.trim()}${observacao.trim() ? `\n${observacao.trim()}` : ""}`, forma })
       setCarrinho([])
       window.sessionStorage.removeItem("snp_carrinho")
       setSucesso(true)

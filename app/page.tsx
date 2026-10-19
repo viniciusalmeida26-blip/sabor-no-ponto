@@ -115,6 +115,11 @@ export default function LoginPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
+              <label htmlFor="telefone" className="text-sm font-medium text-foreground">Telefone</label>
+              <input id="telefone" type="tel" autoComplete="tel" placeholder="(41) 99999-9999" className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none ring-ring/50 transition focus:border-ring focus:ring-2" />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="senha"
                 className="text-sm font-medium text-foreground"

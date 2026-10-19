@@ -5,6 +5,7 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 import { LockKeyhole } from "lucide-react"
 
 export default function LoginPage() {
@@ -153,6 +154,9 @@ export default function LoginPage() {
           <p className="mt-4 text-center text-xs text-muted-foreground text-pretty">
             Acesso restrito ao responsável cadastrado.
           </p>
+          <Link href="/cliente" className="mt-4 block text-center text-sm font-medium text-primary underline-offset-4 hover:underline">
+            Sou cliente e quero fazer um pedido
+          </Link>
         </div>
       </div>
     </main>

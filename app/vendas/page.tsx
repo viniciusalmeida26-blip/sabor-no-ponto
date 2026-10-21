@@ -1,6 +1,7 @@
 "use client"
 
 import { AppShell } from "@/components/app-shell"
+import { obterCardapioDoDia } from "@/lib/menu-do-dia"
 import { formatarBRL, useStore } from "@/lib/store"
 import Link from "next/link"
 import { CalendarDays, ClipboardPlus, FileText, ShoppingBag, Soup, TrendingUp, Utensils, Clock3, CheckCircle2 } from "lucide-react"
@@ -10,6 +11,7 @@ export default function VendasPage() {
   const marmitas = produtos.filter((produto) => produto.categoria === "marmita")
   const marmitaDoDia = produtos.find((produto) => produto.id === marmitaDoDiaId) ?? marmitas[0]
   const hoje = new Date()
+  const sugestaoDoDia = obterCardapioDoDia(hoje)
   const chaveHoje = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-${String(hoje.getDate()).padStart(2, "0")}`
   const vendasHoje = vendas.filter((venda) => venda.data.slice(0, 10) === chaveHoje)
   const faturamentoHoje = vendasHoje.reduce((total, venda) => total + venda.quantidade * venda.valorUnitario, 0)
@@ -49,9 +51,10 @@ export default function VendasPage() {
           <div className="absolute inset-0 bg-gradient-to-r from-foreground/95 via-foreground/65 to-foreground/15" />
           <div className="relative flex min-h-[340px] flex-col justify-center gap-5 p-6 text-primary-foreground sm:p-9">
             <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-widest text-primary-foreground/85"><Soup className="size-5" aria-hidden="true" /> Cardápio em destaque</div>
-            <div><p className="text-sm font-medium text-primary-foreground/80">Marmita do Dia</p><h2 className="mt-1 max-w-2xl text-3xl font-bold leading-tight text-balance sm:text-4xl">{configuracaoMarmitaDia.nome || marmitaDoDia?.nome}</h2></div>
-            <p className="max-w-xl text-sm leading-6 text-primary-foreground/85">{configuracaoMarmitaDia.descricao || marmitaDoDia?.descricao}</p>
-            {configuracaoMarmitaDia.ingredientes && <div className="flex flex-col gap-2"><p className="text-xs font-semibold uppercase tracking-wider text-primary-foreground/70">Ingredientes</p><p className="max-w-xl text-sm leading-6 text-primary-foreground/90">{configuracaoMarmitaDia.ingredientes.split(",").map((item) => item.trim()).filter(Boolean).join(" • ")}</p></div>}
+            <div><p className="text-sm font-medium text-primary-foreground/80">Marmita do Dia</p><h2 className="mt-1 max-w-2xl text-3xl font-bold leading-tight text-balance sm:text-4xl">{configuracaoMarmitaDia.nome || sugestaoDoDia.nome || marmitaDoDia?.nome}</h2></div>
+            <p className="max-w-xl text-sm leading-6 text-primary-foreground/85">{configuracaoMarmitaDia.descricao || sugestaoDoDia.descricao || marmitaDoDia?.descricao}</p>
+            <div className="flex flex-col gap-2"><p className="text-xs font-semibold uppercase tracking-wider text-primary-foreground/70">Acompanhamentos</p><p className="max-w-xl text-sm leading-6 text-primary-foreground/90">{(configuracaoMarmitaDia.ingredientes || sugestaoDoDia.ingredientes).split(",").map((item) => item.trim()).filter(Boolean).join(" • ")}</p></div>
+            {marmitaDoDia && <p className="text-3xl font-bold">{formatarBRL(marmitaDoDia.preco)}</p>}
             <div className="flex flex-wrap gap-2"><span className="rounded-full bg-primary-foreground/15 px-3 py-1.5 text-sm">{marmitaDoDia?.disponivel ? "Disponível" : "Indisponível"}</span><span className="rounded-full bg-primary-foreground/15 px-3 py-1.5 text-sm">Ingredientes do dia</span></div>
           </div>
         </section>

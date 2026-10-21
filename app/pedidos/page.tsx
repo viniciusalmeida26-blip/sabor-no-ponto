@@ -252,7 +252,7 @@ export default function PedidosPage() {
             <div>
               <h2 id="reset-pedidos-title" className="text-sm font-semibold text-foreground">Fechamento diário</h2>
               <p className="text-xs text-muted-foreground">
-                Pedidos entregues são mantidos nas vendas e retirados da fila após o reset.
+                Pedidos entregues permanecem no histórico e nas vendas. O fechamento apenas registra a data do último fechamento.
               </p>
               <p className="mt-1 text-xs font-medium text-primary">
                 {ultimoResetPedidos
@@ -265,24 +265,24 @@ export default function PedidosPage() {
             <DialogTrigger asChild>
               <Button type="button" variant="outline" className="shrink-0 border-primary/30 bg-background">
                 <RefreshCw className="size-4" aria-hidden="true" />
-                Resetar pedidos do dia
+                Registrar fechamento do dia
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <AlertTriangle className="size-5 text-primary" aria-hidden="true" />
-                  Confirmar reset diário
+                  Confirmar fechamento do dia
                 </DialogTitle>
                 <DialogDescription>
-                  Os pedidos entregues sairão da fila atual, mas suas vendas continuarão no histórico e nos relatórios. Pedidos pendentes e em preparo não ser��o alterados.
+                  O fechamento registra a data da operação. Nenhum pedido, venda ou relatório será apagado ou alterado.
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setDialogResetAberto(false)} disabled={resetando}>Cancelar</Button>
                 <Button type="button" onClick={confirmarReset} disabled={resetando}>
                   <RefreshCw className={`size-4 ${resetando ? "animate-spin" : ""}`} aria-hidden="true" />
-                  {resetando ? "Resetando..." : "Confirmar reset"}
+                  {resetando ? "Registrando..." : "Confirmar fechamento"}
                 </Button>
               </DialogFooter>
             </DialogContent>

@@ -348,7 +348,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   async function resetarPedidosEntregues() {
     const data = await resetarPedidosEntreguesNoBanco()
-    setPedidos((atual) => atual.filter((pedido) => pedido.status !== "entregue"))
     setUltimoResetPedidos(data)
     return data
   }

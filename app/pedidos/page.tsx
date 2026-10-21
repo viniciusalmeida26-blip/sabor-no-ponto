@@ -116,12 +116,16 @@ export default function PedidosPage() {
   const [forma, setForma] = useState<FormaPagamento>("dinheiro")
   const [quantidades, setQuantidades] = useState<Record<string, number>>({})
   const [busca, setBusca] = useState("")
+  const [filtroStatus, setFiltroStatus] = useState<StatusPedido | "todos">("todos")
 
   const pedidosFiltrados = useMemo(() => {
     const termo = busca.trim().toLocaleLowerCase("pt-BR")
-    if (!termo) return pedidos
-    return pedidos.filter((pedido) => `${pedido.cliente} ${pedido.id} ${pedido.itens.map((item) => item.descricao).join(" ")}`.toLocaleLowerCase("pt-BR").includes(termo))
-  }, [busca, pedidos])
+    return pedidos.filter((pedido) => {
+      const correspondeStatus = filtroStatus === "todos" || pedido.status === filtroStatus
+      const correspondeBusca = !termo || `${pedido.cliente} ${pedido.id} ${pedido.itens.map((item) => item.descricao).join(" ")}`.toLocaleLowerCase("pt-BR").includes(termo)
+      return correspondeStatus && correspondeBusca
+    })
+  }, [busca, filtroStatus, pedidos])
 
   const pedidosPorStatus = useMemo(
     () =>
@@ -406,9 +410,15 @@ export default function PedidosPage() {
               Organize a produção e avance cada pedido com um toque.
             </p>
           </div>
-          <div className="relative w-full sm:max-w-sm">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-            <input value={busca} onChange={(event) => setBusca(event.target.value)} placeholder="Buscar por cliente ou item..." aria-label="Buscar pedidos" className="h-10 w-full rounded-lg border border-input bg-background pl-9 pr-3 text-sm text-foreground outline-none ring-ring/50 transition focus:border-ring focus:ring-2" />
+          <div className="flex flex-col gap-3">
+            <div className="relative w-full sm:max-w-sm">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+              <input value={busca} onChange={(event) => setBusca(event.target.value)} placeholder="Buscar por cliente ou item..." aria-label="Buscar pedidos" className="h-10 w-full rounded-lg border border-input bg-background pl-9 pr-3 text-sm text-foreground outline-none ring-ring/50 transition focus:border-ring focus:ring-2" />
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Filtrar pedidos por status" role="group">
+              <button type="button" onClick={() => setFiltroStatus("todos")} aria-pressed={filtroStatus === "todos"} className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${filtroStatus === "todos" ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground hover:bg-muted"}`}>Todos ({pedidos.length})</button>
+              {statusInfo.map((status) => { const total = pedidos.filter((pedido) => pedido.status === status.valor).length; return <button key={status.valor} type="button" onClick={() => setFiltroStatus(status.valor)} aria-pressed={filtroStatus === status.valor} className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${filtroStatus === status.valor ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground hover:bg-muted"}`}>{status.label} ({total})</button> })}
+            </div>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-3">

@@ -244,6 +244,10 @@ export default function PedidosPage() {
           </p>
         </div>
 
+        <section aria-label="Resumo dos pedidos" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          {statusInfo.map((status) => { const Icon = status.icon; const total = pedidosFiltrados.filter((pedido) => pedido.status === status.valor).length; return <div key={status.valor} className="rounded-2xl border border-border bg-card p-4 shadow-sm"><div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">{status.label}</span><Icon className="size-4 text-muted-foreground" aria-hidden="true" /></div><p className="mt-2 text-2xl font-bold text-foreground">{total}</p><p className="mt-1 text-xs text-muted-foreground">{total === 1 ? "pedido" : "pedidos"}</p></div> })}
+        </section>
+
         <section className="flex flex-col gap-4 rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between" aria-labelledby="reset-pedidos-title">
           <div className="flex items-start gap-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -256,8 +260,8 @@ export default function PedidosPage() {
               </p>
               <p className="mt-1 text-xs font-medium text-primary">
                 {ultimoResetPedidos
-                  ? `Último reset: ${new Date(ultimoResetPedidos).toLocaleString("pt-BR")}`
-                  : "Ainda não houve reset registrado"}
+                  ? `Último fechamento: ${new Date(ultimoResetPedidos).toLocaleString("pt-BR")}`
+                  : "Ainda não houve fechamento registrado"}
               </p>
             </div>
           </div>

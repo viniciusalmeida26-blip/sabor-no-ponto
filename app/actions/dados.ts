@@ -194,6 +194,19 @@ export async function excluirDespesa(id: string) {
 
 // ---------- Pedidos ----------
 
+export async function carregarCliente(telefone: string) {
+  const normalizado = normalizarTelefone(telefone)
+  if (normalizado.length < 10) return null
+  await garantirTabelaClientes()
+  const resultado = await db.execute(sql`SELECT telefone, nome FROM clientes WHERE telefone = ${normalizado} LIMIT 1`)
+  const linha = (resultado.rows[0] ?? null) as { telefone: string; nome: string } | null
+  return linha
+}
+
+export async function atualizarCliente(entrada: { nome: string; telefone: string }) {
+  return criarOuAtualizarCliente(entrada)
+}
+
 export async function criarOuAtualizarCliente(entrada: { nome: string; telefone: string }) {
   const nome = entrada.nome.trim()
   const telefone = normalizarTelefone(entrada.telefone)

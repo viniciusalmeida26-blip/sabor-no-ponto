@@ -8,7 +8,7 @@ import {
   pedidoResets as tPedidoResets,
   type ItemPedido,
 } from "@/lib/db/schema"
-import { and, desc, eq } from "drizzle-orm"
+import { and, desc, eq, sql } from "drizzle-orm"
 import { usuarios as tUsuarios } from "@/lib/db/schema"
 
 export type FormaPagamento = "dinheiro" | "cartao" | "pix"
@@ -67,6 +67,19 @@ export async function atualizarFotoPerfil(email: string, fotoUrl: string | null)
 
 function gerarId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
+}
+
+function normalizarTelefone(telefone: string) {
+  return telefone.replace(/\D/g, "").slice(-11)
+}
+
+async function garantirTabelaClientes() {
+  await db.execute(sql`CREATE TABLE IF NOT EXISTS clientes (
+    telefone TEXT PRIMARY KEY,
+    nome TEXT NOT NULL,
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`)
 }
 
 // ---------- Leitura ----------
@@ -181,14 +194,35 @@ export async function excluirDespesa(id: string) {
 
 // ---------- Pedidos ----------
 
+export async function criarOuAtualizarCliente(entrada: { nome: string; telefone: string }) {
+  const nome = entrada.nome.trim()
+  const telefone = normalizarTelefone(entrada.telefone)
+  if (!nome || nome.length > 120) throw new Error("Nome do cliente inválido")
+  if (telefone.length < 10) throw new Error("Telefone do cliente inválido")
+  await garantirTabelaClientes()
+  await db.execute(sql`INSERT INTO clientes (telefone, nome) VALUES (${telefone}, ${nome}) ON CONFLICT (telefone) DO UPDATE SET nome = EXCLUDED.nome, atualizado_em = NOW()`)
+  return { nome, telefone }
+}
+
+export async function carregarPedidosDoCliente(telefone: string): Promise<Pedido[]> {
+  const normalizado = normalizarTelefone(telefone)
+  if (normalizado.length < 10) return []
+  const linhas = await db.select().from(tPedidos).where(sql`${tPedidos.observacao} LIKE ${`Telefone: %${normalizado}%`}`).orderBy(desc(tPedidos.data))
+  return linhas.map((p) => ({ id: p.id, cliente: p.cliente, itens: p.itens, observacao: p.observacao, forma: p.forma as FormaPagamento, status: p.status as StatusPedido, vendaRegistrada: p.vendaRegistrada, data: p.data.toISOString() }))
+}
+
 export async function criarPedido(entrada: {
   cliente: string
+  telefone?: string
   itens: ItemPedido[]
   observacao: string
   forma: FormaPagamento
 }): Promise<Pedido> {
   const cliente = entrada.cliente.trim()
+  const telefone = normalizarTelefone(entrada.telefone ?? "")
   if (!cliente || cliente.length > 120) throw new Error("Nome do cliente inválido")
+  if (entrada.telefone && telefone.length < 10) throw new Error("Telefone do cliente inválido")
+  if (telefone) await criarOuAtualizarCliente({ nome: cliente, telefone })
   if (!entrada.itens.length || entrada.itens.length > 50) throw new Error("Itens do pedido inválidos")
   if (entrada.itens.some((item) => !item.descricao.trim() || !Number.isInteger(item.quantidade) || item.quantidade < 1 || item.quantidade > 99 || !Number.isFinite(item.preco) || item.preco < 0)) throw new Error("Dados dos itens inválidos")
   if (entrada.observacao.length > 500) throw new Error("Observação muito longa")
@@ -198,7 +232,7 @@ export async function criarPedido(entrada: {
     id,
     cliente,
     itens: entrada.itens,
-    observacao: entrada.observacao,
+    observacao: `${telefone ? `Telefone: ${telefone}\n` : ""}${entrada.observacao}`.trim(),
     forma: entrada.forma,
     status: "pendente",
     vendaRegistrada: false,

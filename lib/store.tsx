@@ -19,6 +19,7 @@ import {
   resetarPedidosEntregues as resetarPedidosEntreguesNoBanco,
   obterPerfil,
   atualizarFotoPerfil as atualizarFotoPerfilNoBanco,
+  criarOuAtualizarCliente,
 } from "@/app/actions/dados"
 
 export type FormaPagamento = "dinheiro" | "cartao" | "pix"
@@ -131,8 +132,8 @@ type StoreContextType = {
   addDespesa: (d: Omit<Despesa, "id" | "data">) => void
   removeDespesa: (id: string) => void
   addPedido: (
-    p: Omit<Pedido, "id" | "data" | "status" | "vendaRegistrada">,
-  ) => void
+p: Omit<Pedido, "id" | "data" | "status" | "vendaRegistrada"> & { telefone?: string },
+  ) => Promise<void>
   removePedido: (id: string) => void
   atualizarStatusPedido: (id: string, status: StatusPedido) => void
   ultimoResetPedidos: string | null
@@ -324,8 +325,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function addPedido(
-    p: Omit<Pedido, "id" | "data" | "status" | "vendaRegistrada">,
+async function addPedido(
+  p: Omit<Pedido, "id" | "data" | "status" | "vendaRegistrada"> & { telefone?: string },
   ) {
     try {
       const novo = await criarPedido(p)

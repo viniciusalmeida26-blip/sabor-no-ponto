@@ -28,6 +28,12 @@ export function ClientMenu() {
   const total = carrinho.reduce((soma, item) => soma + item.preco * item.quantidade, 0)
   useEffect(() => {
     try {
+      const clienteSalvo = window.sessionStorage.getItem("snp_cliente")
+      if (clienteSalvo) {
+        const dados = JSON.parse(clienteSalvo) as { nome?: string; telefone?: string }
+        setCliente(dados.nome ?? "")
+        setTelefone(dados.telefone ?? "")
+      }
       const salvo = window.sessionStorage.getItem("snp_carrinho")
       if (salvo) setCarrinho(JSON.parse(salvo) as ItemCarrinho[])
     } catch (error) {

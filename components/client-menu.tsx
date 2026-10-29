@@ -4,7 +4,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 import { ArrowLeft, CheckCircle2, Heart, Minus, Plus, Search, ShoppingBag, Trash2 } from "lucide-react"
-import { alternarFavoritoCliente, listarFavoritosCliente } from "@/app/actions/dados"
+import { alternarFavoritoCliente, listarFavoritosCliente, listarEnderecosCliente, type EnderecoCliente } from "@/app/actions/dados"
 import { formatarBRL, useStore, type FormaPagamento } from "@/lib/store"
 
 type ItemCarrinho = { id: string; nome: string; preco: number; quantidade: number; imagem: string }
@@ -23,6 +23,8 @@ export function ClientMenu() {
   const [sucesso, setSucesso] = useState(false)
   const [erro, setErro] = useState("")
   const [favoritos, setFavoritos] = useState<string[]>([])
+  const [enderecos, setEnderecos] = useState<EnderecoCliente[]>([])
+  const [enderecoSelecionado, setEnderecoSelecionado] = useState("")
   const [carrinhoCarregado, setCarrinhoCarregado] = useState(false)
   const categorias = ["todos", ...Array.from(new Set(produtos.map((produto) => produto.categoria)))]
   const filtrados = useMemo(() => produtos.filter((produto) => produto.disponivel && (categoria === "todos" || produto.categoria === categoria) && `${produto.nome} ${produto.descricao}`.toLowerCase().includes(busca.toLowerCase())), [produtos, categoria, busca])
@@ -48,7 +50,10 @@ export function ClientMenu() {
     if (carrinhoCarregado) window.sessionStorage.setItem("snp_carrinho", JSON.stringify(carrinho))
   }, [carrinho, carrinhoCarregado])
   useEffect(() => {
-    if (telefone.replace(/\D/g, "").length >= 10) listarFavoritosCliente(telefone).then(setFavoritos).catch(() => setFavoritos([]))
+    if (telefone.replace(/\D/g, "").length >= 10) {
+      listarFavoritosCliente(telefone).then(setFavoritos).catch(() => setFavoritos([]))
+      listarEnderecosCliente(telefone).then((lista) => { setEnderecos(lista); setEnderecoSelecionado(lista.find((item) => item.principal)?.id ?? lista[0]?.id ?? "") }).catch(() => setEnderecos([]))
+    }
   }, [telefone])
   async function alternarFavorito(produtoId: string) {
     if (telefone.replace(/\D/g, "").length < 10) { setErro("Informe seu telefone para salvar favoritos."); return }
@@ -62,7 +67,7 @@ export function ClientMenu() {
     setErro("")
     setEnviando(true)
     try {
-      await addPedido({ cliente: cliente.trim(), telefone: telefone.trim(), itens: carrinho.map(({ nome, preco, quantidade, imagem }) => ({ descricao: nome, preco, quantidade, imagem })), observacao: `Telefone: ${telefone.trim()}${observacao.trim() ? `\n${observacao.trim()}` : ""}`, forma })
+      await addPedido({ cliente: cliente.trim(), telefone: telefone.trim(), itens: carrinho.map(({ nome, preco, quantidade, imagem }) => ({ descricao: nome, preco, quantidade, imagem })), observacao: `Telefone: ${telefone.trim()}${enderecoSelecionado ? `\nEndereço: ${(() => { const e = enderecos.find((item) => item.id === enderecoSelecionado); return e ? `${e.rua}, ${e.numero} - ${e.bairro}, ${e.cidade} - CEP ${e.cep}` : "" })()}` : ""}${observacao.trim() ? `\n${observacao.trim()}` : ""}`, forma })
       window.sessionStorage.setItem("snp_cliente", JSON.stringify({ nome: cliente.trim(), telefone: telefone.trim() }))
       setCarrinho([])
       window.sessionStorage.removeItem("snp_carrinho")

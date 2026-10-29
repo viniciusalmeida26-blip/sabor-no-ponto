@@ -9,6 +9,7 @@ import {
   ehMarmita,
   type Venda,
 } from "@/lib/store"
+import { obterCardapioDoDia } from "@/lib/menu-do-dia"
 import {
   ChevronLeft,
   ChevronRight,
@@ -104,6 +105,9 @@ export default function CalendarioPage() {
   }, [vendas, diaSelecionado])
 
   const resumoDia = diaSelecionado ? totaisPorDia.get(diaSelecionado) : undefined
+  const cardapioSelecionado = diaSelecionado
+    ? obterCardapioDoDia(new Date(`${diaSelecionado}T12:00:00`))
+    : obterCardapioDoDia(hoje)
 
   const chaveHoje = chaveDia(hoje.toISOString())
 
@@ -208,6 +212,15 @@ export default function CalendarioPage() {
               Detalhes do dia{" "}
               {diaSelecionado.split("-").reverse().join("/")}
             </h2>
+
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">Cardápio do dia</p>
+              <div className="mt-2 flex flex-col gap-1">
+                <p className="font-semibold text-foreground">{cardapioSelecionado.nome}</p>
+                <p className="text-sm text-muted-foreground">{cardapioSelecionado.descricao}</p>
+                <p className="text-sm font-semibold text-primary">Acompanhamentos: {cardapioSelecionado.ingredientes.split(",").map((item) => item.trim()).filter(Boolean).join(" • ")}</p>
+              </div>
+            </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1 rounded-xl border border-border bg-card p-4 shadow-sm">

@@ -40,7 +40,7 @@ export type Despesa = {
   data: string // ISO
 }
 
-export type StatusPedido = "pendente" | "preparando" | "pronta" | "entregue" | "cancelado"
+export type StatusPedido = "pendente" | "preparando" | "pronta" | "saiu_entrega" | "entregue" | "cancelado"
 
 export type CategoriaProduto = "marmita" | "bebida" | "sobremesa" | "fitness"
 
@@ -434,8 +434,9 @@ export const rotuloForma: Record<FormaPagamento, string> = {
 export const rotuloStatus: Record<StatusPedido, string> = {
   pendente: "Pendente",
   preparando: "Preparando",
-  pronta: "Pronta",
-  entregue: "Entregue",
+    pronta: "Pronta",
+    saiu_entrega: "Saiu para entrega",
+    entregue: "Entregue",
   cancelado: "Cancelado",
 }
 

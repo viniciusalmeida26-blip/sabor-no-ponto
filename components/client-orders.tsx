@@ -8,6 +8,7 @@ const etapas: Array<{ status: Pedido["status"]; label: string }> = [
   { status: "pendente", label: "Pedido recebido" },
   { status: "preparando", label: "Em preparação" },
   { status: "pronta", label: "Pronto" },
+  { status: "saiu_entrega", label: "Saiu para entrega" },
   { status: "entregue", label: "Entregue" },
 ]
 
@@ -15,6 +16,7 @@ const statusInfo: Record<Pedido["status"], { label: string; color: string }> = {
   pendente: { label: "Pedido recebido", color: "bg-amber-100 text-amber-800" },
   preparando: { label: "Em preparo", color: "bg-blue-100 text-blue-800" },
   pronta: { label: "Pronto para retirada", color: "bg-emerald-100 text-emerald-800" },
+  saiu_entrega: { label: "Saiu para entrega", color: "bg-orange-100 text-orange-800" },
   entregue: { label: "Entregue", color: "bg-slate-100 text-slate-700" },
   cancelado: { label: "Cancelado", color: "bg-rose-100 text-rose-700" },
 }

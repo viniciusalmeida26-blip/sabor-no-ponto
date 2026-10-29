@@ -287,6 +287,26 @@ export async function excluirEnderecoCliente(telefone: string, id: string) {
   await db.execute(sql`DELETE FROM enderecos_clientes WHERE id = ${id} AND cliente_id = ${`cli_${normalizado}`}`)
 }
 
+export async function listarFavoritosCliente(telefone: string): Promise<string[]> {
+  const normalizado = normalizarTelefone(telefone)
+  if (normalizado.length < 10) return []
+  await garantirTabelasCliente()
+  const linhas = await db.execute(sql`SELECT f.produto_id FROM favoritos_clientes f JOIN clientes c ON c.id = f.cliente_id WHERE c.telefone = ${normalizado} ORDER BY f.criado_em DESC`)
+  return linhas.rows.map((linha) => String((linha as { produto_id: string }).produto_id))
+}
+
+export async function alternarFavoritoCliente(telefone: string, produtoId: string) {
+  const normalizado = normalizarTelefone(telefone)
+  if (normalizado.length < 10) throw new Error("Telefone do cliente inválido")
+  await garantirTabelasCliente()
+  const cliente = await carregarCliente(normalizado)
+  if (!cliente) throw new Error("Cliente não encontrado")
+  const existente = await db.execute(sql`SELECT 1 FROM favoritos_clientes WHERE cliente_id = ${cliente.id} AND produto_id = ${produtoId} LIMIT 1`)
+  if (existente.rows.length) await db.execute(sql`DELETE FROM favoritos_clientes WHERE cliente_id = ${cliente.id} AND produto_id = ${produtoId}`)
+  else await db.execute(sql`INSERT INTO favoritos_clientes (cliente_id, produto_id) VALUES (${cliente.id}, ${produtoId})`)
+  return !existente.rows.length
+}
+
 export async function carregarPedidosDoCliente(telefone: string): Promise<Pedido[]> {
   const normalizado = normalizarTelefone(telefone)
   if (normalizado.length < 10) return []

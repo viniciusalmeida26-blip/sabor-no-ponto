@@ -73,13 +73,43 @@ function normalizarTelefone(telefone: string) {
   return telefone.replace(/\D/g, "").slice(-11)
 }
 
-async function garantirTabelaClientes() {
+async function garantirTabelasCliente() {
   await db.execute(sql`CREATE TABLE IF NOT EXISTS clientes (
-    telefone TEXT PRIMARY KEY,
+    id TEXT PRIMARY KEY,
+    telefone TEXT NOT NULL,
     nome TEXT NOT NULL,
+    email TEXT,
     criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`)
+  await db.execute(sql`ALTER TABLE clientes ADD COLUMN IF NOT EXISTS id TEXT`)
+  await db.execute(sql`ALTER TABLE clientes ADD COLUMN IF NOT EXISTS email TEXT`)
+  await db.execute(sql`UPDATE clientes SET id = COALESCE(id, md5(telefone)) WHERE id IS NULL`)
+  await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS clientes_telefone_unico ON clientes (telefone)`)
+  await db.execute(sql`CREATE TABLE IF NOT EXISTS enderecos_clientes (
+    id TEXT PRIMARY KEY,
+    cliente_id TEXT NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
+    etiqueta TEXT NOT NULL,
+    cep TEXT NOT NULL,
+    rua TEXT NOT NULL,
+    numero TEXT NOT NULL,
+    complemento TEXT NOT NULL DEFAULT '',
+    bairro TEXT NOT NULL,
+    cidade TEXT NOT NULL,
+    referencia TEXT NOT NULL DEFAULT '',
+    principal BOOLEAN NOT NULL DEFAULT FALSE,
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`)
+  await db.execute(sql`CREATE TABLE IF NOT EXISTS favoritos_clientes (
+    cliente_id TEXT NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
+    produto_id TEXT NOT NULL,
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (cliente_id, produto_id)
+  )`)
+}
+
+async function garantirTabelaClientes() {
+  await garantirTabelasCliente()
 }
 
 // ---------- Leitura ----------
@@ -198,8 +228,8 @@ export async function carregarCliente(telefone: string) {
   const normalizado = normalizarTelefone(telefone)
   if (normalizado.length < 10) return null
   await garantirTabelaClientes()
-  const resultado = await db.execute(sql`SELECT telefone, nome FROM clientes WHERE telefone = ${normalizado} LIMIT 1`)
-  const linha = (resultado.rows[0] ?? null) as { telefone: string; nome: string } | null
+  const resultado = await db.execute(sql`SELECT id, telefone, nome FROM clientes WHERE telefone = ${normalizado} LIMIT 1`)
+  const linha = (resultado.rows[0] ?? null) as { id: string; telefone: string; nome: string } | null
   return linha
 }
 
@@ -212,9 +242,49 @@ export async function criarOuAtualizarCliente(entrada: { nome: string; telefone:
   const telefone = normalizarTelefone(entrada.telefone)
   if (!nome || nome.length > 120) throw new Error("Nome do cliente inválido")
   if (telefone.length < 10) throw new Error("Telefone do cliente inválido")
-  await garantirTabelaClientes()
-  await db.execute(sql`INSERT INTO clientes (telefone, nome) VALUES (${telefone}, ${nome}) ON CONFLICT (telefone) DO UPDATE SET nome = EXCLUDED.nome, atualizado_em = NOW()`)
-  return { nome, telefone }
+  await garantirTabelasCliente()
+  const id = `cli_${telefone}`
+  await db.execute(sql`INSERT INTO clientes (id, telefone, nome) VALUES (${id}, ${telefone}, ${nome}) ON CONFLICT (telefone) DO UPDATE SET nome = EXCLUDED.nome, atualizado_em = NOW()`)
+  return { id, nome, telefone }
+}
+
+export type EnderecoCliente = {
+  id: string
+  etiqueta: string
+  cep: string
+  rua: string
+  numero: string
+  complemento: string
+  bairro: string
+  cidade: string
+  referencia: string
+  principal: boolean
+}
+
+export async function listarEnderecosCliente(telefone: string): Promise<EnderecoCliente[]> {
+  const normalizado = normalizarTelefone(telefone)
+  if (normalizado.length < 10) return []
+  await garantirTabelasCliente()
+  const linhas = await db.execute(sql`SELECT e.id, e.etiqueta, e.cep, e.rua, e.numero, e.complemento, e.bairro, e.cidade, e.referencia, e.principal FROM enderecos_clientes e JOIN clientes c ON c.id = e.cliente_id WHERE c.telefone = ${normalizado} ORDER BY e.principal DESC, e.criado_em DESC`)
+  return linhas.rows as EnderecoCliente[]
+}
+
+export async function salvarEnderecoCliente(telefone: string, endereco: Omit<EnderecoCliente, "id"> & { id?: string }) {
+  const normalizado = normalizarTelefone(telefone)
+  if (normalizado.length < 10) throw new Error("Telefone do cliente inválido")
+  await garantirTabelasCliente()
+  const cliente = await carregarCliente(normalizado)
+  if (!cliente) throw new Error("Cliente não encontrado")
+  const id = endereco.id ?? gerarId()
+  if (endereco.principal) await db.execute(sql`UPDATE enderecos_clientes SET principal = FALSE WHERE cliente_id = ${`cli_${normalizado}`}`)
+  await db.execute(sql`INSERT INTO enderecos_clientes (id, cliente_id, etiqueta, cep, rua, numero, complemento, bairro, cidade, referencia, principal) VALUES (${id}, ${`cli_${normalizado}`}, ${endereco.etiqueta}, ${endereco.cep}, ${endereco.rua}, ${endereco.numero}, ${endereco.complemento}, ${endereco.bairro}, ${endereco.cidade}, ${endereco.referencia}, ${endereco.principal}) ON CONFLICT (id) DO UPDATE SET etiqueta = EXCLUDED.etiqueta, cep = EXCLUDED.cep, rua = EXCLUDED.rua, numero = EXCLUDED.numero, complemento = EXCLUDED.complemento, bairro = EXCLUDED.bairro, cidade = EXCLUDED.cidade, referencia = EXCLUDED.referencia, principal = EXCLUDED.principal`)
+  return { ...endereco, id }
+}
+
+export async function excluirEnderecoCliente(telefone: string, id: string) {
+  const normalizado = normalizarTelefone(telefone)
+  await garantirTabelasCliente()
+  await db.execute(sql`DELETE FROM enderecos_clientes WHERE id = ${id} AND cliente_id = ${`cli_${normalizado}`}`)
 }
 
 export async function carregarPedidosDoCliente(telefone: string): Promise<Pedido[]> {

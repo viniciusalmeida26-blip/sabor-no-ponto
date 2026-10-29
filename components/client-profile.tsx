@@ -1,60 +1,16 @@
 "use client"
-
 import Link from "next/link"
 import { useEffect, useState } from "react"
-import { atualizarCliente, carregarCliente } from "@/app/actions/dados"
+import { atualizarCliente, carregarCliente, listarEnderecosCliente, salvarEnderecoCliente, excluirEnderecoCliente, type EnderecoCliente } from "@/app/actions/dados"
 
+const vazio = { etiqueta: "Casa", cep: "", rua: "", numero: "", complemento: "", bairro: "", cidade: "", referencia: "", principal: true }
 export function ClientProfile() {
-  const [nome, setNome] = useState("")
-  const [telefone, setTelefone] = useState("")
-  const [salvando, setSalvando] = useState(false)
-  const [mensagem, setMensagem] = useState("")
-  const [erro, setErro] = useState("")
-
-  useEffect(() => {
-    try {
-      const salvo = window.sessionStorage.getItem("snp_cliente")
-      if (salvo) {
-        const cliente = JSON.parse(salvo) as { nome?: string; telefone?: string }
-        setNome(cliente.nome ?? "")
-        setTelefone(cliente.telefone ?? "")
-      }
-    } catch (error) {
-      console.log("[v0] erro ao carregar sessão do cliente:", error)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!telefone) return
-    carregarCliente(telefone).then((cliente) => {
-      if (cliente) setNome(cliente.nome)
-    }).catch((error) => console.log("[v0] erro ao carregar perfil:", error))
-  }, [telefone])
-
-  async function salvar(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setErro("")
-    setMensagem("")
-    setSalvando(true)
-    try {
-      const cliente = await atualizarCliente({ nome, telefone })
-      window.sessionStorage.setItem("snp_cliente", JSON.stringify(cliente))
-      setNome(cliente.nome)
-      setTelefone(cliente.telefone)
-      setMensagem("Perfil salvo com sucesso.")
-    } catch (error) {
-      console.log("[v0] erro ao salvar perfil:", error)
-      setErro("Não foi possível salvar o perfil. Confira o nome e o telefone.")
-    } finally {
-      setSalvando(false)
-    }
-  }
-
-  function sair() {
-    window.sessionStorage.removeItem("snp_cliente")
-    window.sessionStorage.removeItem("snp_carrinho")
-    window.location.replace("/")
-  }
-
-  return <main className="min-h-dvh bg-[#fffaf5] px-4 pb-12 text-[#3a2518]"><header className="sticky top-0 z-10 -mx-4 mb-8 border-b border-[#eadbce] bg-[#fffaf5]/95 px-4 py-3 backdrop-blur"><div className="mx-auto flex max-w-5xl items-center justify-between gap-3"><Link href="/cliente" className="font-bold text-[#c85b16]">Sabor no Ponto</Link><nav aria-label="Navegação do cliente" className="flex items-center gap-3 overflow-x-auto text-xs font-semibold sm:gap-4 sm:text-sm"><Link href="/cliente">Cardápio</Link><Link href="/cliente/pedidos">Meus pedidos</Link><Link href="/cliente/perfil" className="text-[#c85b16]">Perfil</Link><button type="button" onClick={sair} className="rounded-lg border border-[#eadbce] px-2 py-1">Sair</button></nav></div></header><section className="mx-auto max-w-xl rounded-3xl border border-[#eadbce] bg-white p-6 shadow-sm sm:p-8"><p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#c85b16]">Perfil</p><h1 className="mt-3 text-2xl font-bold">Sua conta do cliente</h1><p className="mt-2 text-sm leading-6 text-[#856c5a]">Seu telefone identifica sua conta e seus pedidos.</p><form onSubmit={salvar} className="mt-6 space-y-4"><label className="block text-sm font-semibold">Nome<input value={nome} onChange={(event) => setNome(event.target.value)} required className="mt-1 h-11 w-full rounded-xl border border-[#eadbce] px-3 font-normal outline-none focus:ring-2 focus:ring-[#e87524]/30" /></label><label className="block text-sm font-semibold">Telefone<input value={telefone} onChange={(event) => setTelefone(event.target.value)} required inputMode="tel" placeholder="(41) 99999-9999" className="mt-1 h-11 w-full rounded-xl border border-[#eadbce] px-3 font-normal outline-none focus:ring-2 focus:ring-[#e87524]/30" /></label>{erro && <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{erro}</p>}{mensagem && <p role="status" className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{mensagem}</p>}<button type="submit" disabled={salvando} className="w-full rounded-xl bg-[#e87524] px-4 py-3 text-sm font-semibold text-white disabled:opacity-60">{salvando ? "Salvando..." : "Salvar perfil"}</button></form></section></main>
+  const [nome, setNome] = useState(""); const [telefone, setTelefone] = useState(""); const [enderecos, setEnderecos] = useState<EnderecoCliente[]>([]); const [endereco, setEndereco] = useState(vazio); const [mensagem, setMensagem] = useState(""); const [erro, setErro] = useState(""); const [salvando, setSalvando] = useState(false)
+  useEffect(() => { try { const salvo = window.sessionStorage.getItem("snp_cliente"); if (salvo) { const c = JSON.parse(salvo) as { nome?: string; telefone?: string }; setNome(c.nome ?? ""); setTelefone(c.telefone ?? "") } } catch { setErro("Não foi possível carregar sua sessão.") } }, [])
+  useEffect(() => { if (!telefone) return; carregarCliente(telefone).then((c) => c && setNome(c.nome)).catch(() => undefined); listarEnderecosCliente(telefone).then(setEnderecos).catch(() => setEnderecos([])) }, [telefone])
+  async function salvarPerfil(event: React.FormEvent) { event.preventDefault(); setErro(""); setMensagem(""); setSalvando(true); try { const c = await atualizarCliente({ nome, telefone }); window.sessionStorage.setItem("snp_cliente", JSON.stringify(c)); setNome(c.nome); setTelefone(c.telefone); setMensagem("Perfil salvo com sucesso.") } catch { setErro("Confira o nome e o telefone.") } finally { setSalvando(false) } }
+  async function salvarEndereco(event: React.FormEvent) { event.preventDefault(); setErro(""); try { const salvo = await salvarEnderecoCliente(telefone, endereco); setEnderecos((atual) => [salvo, ...atual.filter((item) => item.id !== salvo.id).map((item) => salvo.principal ? { ...item, principal: false } : item)]); setEndereco(vazio); setMensagem("Endereço salvo com sucesso.") } catch { setErro("Salve seu perfil com telefone válido antes do endereço.") } }
+  async function remover(id: string) { await excluirEnderecoCliente(telefone, id); setEnderecos((atual) => atual.filter((item) => item.id !== id)) }
+  function sair() { window.sessionStorage.removeItem("snp_cliente"); window.sessionStorage.removeItem("snp_carrinho"); window.location.replace("/") }
+  return <main className="min-h-dvh bg-[#fffaf5] px-4 pb-12 text-[#3a2518]"><header className="sticky top-0 z-10 -mx-4 mb-8 border-b border-[#eadbce] bg-[#fffaf5]/95 px-4 py-3 backdrop-blur"><div className="mx-auto flex max-w-5xl items-center justify-between gap-3"><Link href="/cliente" className="font-bold text-[#c85b16]">Sabor no Ponto</Link><nav aria-label="Navegação do cliente" className="flex items-center gap-3 text-xs font-semibold sm:text-sm"><Link href="/cliente">Cardápio</Link><Link href="/cliente/pedidos">Meus pedidos</Link><Link href="/cliente/perfil" className="text-[#c85b16]">Perfil</Link><button type="button" onClick={sair} className="rounded-lg border border-[#eadbce] px-2 py-1">Sair</button></nav></div></header><div className="mx-auto grid max-w-3xl gap-5"><section className="rounded-3xl border border-[#eadbce] bg-white p-6 shadow-sm"><p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#c85b16]">Perfil</p><h1 className="mt-2 text-2xl font-bold">Sua conta do cliente</h1><form onSubmit={salvarPerfil} className="mt-5 grid gap-3 sm:grid-cols-2"><label className="text-sm font-semibold">Nome<input value={nome} onChange={(e) => setNome(e.target.value)} required className="mt-1 h-11 w-full rounded-xl border border-[#eadbce] px-3 font-normal" /></label><label className="text-sm font-semibold">Telefone<input value={telefone} onChange={(e) => setTelefone(e.target.value)} required inputMode="tel" placeholder="(41) 99999-9999" className="mt-1 h-11 w-full rounded-xl border border-[#eadbce] px-3 font-normal" /></label><button disabled={salvando} className="rounded-xl bg-[#e87524] px-4 py-3 text-sm font-bold text-white sm:col-span-2">{salvando ? "Salvando..." : "Salvar perfil"}</button></form></section><section className="rounded-3xl border border-[#eadbce] bg-white p-6 shadow-sm"><h2 className="text-xl font-bold">Meus endereços</h2><p className="mt-1 text-sm text-[#856c5a]">Cadastre um endereço principal para agilizar seus próximos pedidos.</p><form onSubmit={salvarEndereco} className="mt-5 grid gap-3 sm:grid-cols-2">{Object.entries({ etiqueta: "Identificação", cep: "CEP", rua: "Rua", numero: "Número", complemento: "Complemento", bairro: "Bairro", cidade: "Cidade", referencia: "Ponto de referência" }).map(([campo, rotulo]) => <label key={campo} className="text-sm font-semibold">{rotulo}<input value={endereco[campo as keyof typeof endereco] as string} onChange={(e) => setEndereco((atual) => ({ ...atual, [campo]: e.target.value }))} required={!['complemento','referencia'].includes(campo)} className="mt-1 h-10 w-full rounded-xl border border-[#eadbce] px-3 font-normal" /></label>)}<label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={endereco.principal} onChange={(e) => setEndereco((atual) => ({ ...atual, principal: e.target.checked }))} /> Usar como endereço principal</label><button className="rounded-xl bg-[#3a2518] px-4 py-3 text-sm font-bold text-white">Adicionar endereço</button></form><div className="mt-6 space-y-3">{enderecos.map((item) => <article key={item.id} className="rounded-2xl border border-[#eadbce] p-4"><div className="flex justify-between gap-3"><strong>{item.etiqueta}{item.principal ? " · Principal" : ""}</strong><button type="button" onClick={() => remover(item.id)} className="text-sm text-rose-700">Excluir</button></div><p className="mt-1 text-sm text-[#856c5a]">{item.rua}, {item.numero} — {item.bairro}, {item.cidade} · CEP {item.cep}</p></article>)}</div></section>{erro && <p role="alert" className="rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{erro}</p>}{mensagem && <p role="status" className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">{mensagem}</p>}</div></main>
 }

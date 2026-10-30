@@ -70,7 +70,10 @@ function gerarId() {
 }
 
 function normalizarTelefone(telefone: string) {
-  return telefone.replace(/\D/g, "").slice(-11)
+  const digitos = telefone.replace(/\D/g, "")
+  if (digitos.startsWith("55")) return digitos.slice(0, 13)
+  if (digitos.length === 10 || digitos.length === 11) return `55${digitos}`
+  return digitos
 }
 
 async function garantirTabelasCliente() {

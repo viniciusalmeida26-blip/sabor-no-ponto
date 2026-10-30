@@ -233,8 +233,17 @@ export async function carregarCliente(telefone: string) {
   return linha
 }
 
+export async function verificarTelefoneCliente(telefone: string) {
+  const normalizado = normalizarTelefone(telefone)
+  if (normalizado.length < 10) throw new Error("Informe um telefone válido com DDD")
+  const cliente = await carregarCliente(normalizado)
+  return { telefone: normalizado, existe: Boolean(cliente), nome: cliente?.nome ?? "" }
+}
+
 export async function atualizarCliente(entrada: { nome: string; telefone: string }) {
-  return criarOuAtualizarCliente(entrada)
+  const verificacao = await verificarTelefoneCliente(entrada.telefone)
+  const cliente = await criarOuAtualizarCliente({ nome: entrada.nome, telefone: verificacao.telefone })
+  return { ...cliente, telefoneVerificado: true, eraExistente: verificacao.existe }
 }
 
 export async function criarOuAtualizarCliente(entrada: { nome: string; telefone: string }) {

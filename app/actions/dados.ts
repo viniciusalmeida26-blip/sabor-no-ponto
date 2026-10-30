@@ -253,7 +253,7 @@ export async function criarOuAtualizarCliente(entrada: { nome: string; telefone:
   const nome = entrada.nome.trim()
   const telefone = normalizarTelefone(entrada.telefone)
   if (!nome || nome.length > 120) throw new Error("Nome do cliente inválido")
-  if (telefone.length < 10) throw new Error("Telefone do cliente inválido")
+  if (telefone.length !== 13 || !telefone.startsWith("55")) throw new Error("Use um celular brasileiro com 13 dígitos, por exemplo 5544999999999")
   await garantirTabelasCliente()
   const id = `cli_${telefone}`
   await db.execute(sql`INSERT INTO clientes (id, telefone, nome) VALUES (${id}, ${telefone}, ${nome}) ON CONFLICT (telefone) DO UPDATE SET nome = EXCLUDED.nome, atualizado_em = NOW()`)

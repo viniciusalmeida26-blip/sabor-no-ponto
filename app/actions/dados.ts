@@ -326,8 +326,10 @@ export async function criarPedido(entrada: {
   if (!cliente || cliente.length > 120) throw new Error("Nome do cliente inválido")
   if (entrada.telefone && telefone.length < 10) throw new Error("Telefone do cliente inválido")
   if (telefone) await criarOuAtualizarCliente({ nome: cliente, telefone })
-  if (!entrada.itens.length || entrada.itens.length > 50) throw new Error("Itens do pedido inválidos")
-  if (entrada.itens.some((item) => !item.descricao.trim() || !Number.isInteger(item.quantidade) || item.quantidade < 1 || item.quantidade > 99 || !Number.isFinite(item.preco) || item.preco < 0)) throw new Error("Dados dos itens inválidos")
+  if (!entrada.itens.length || entrada.itens.length > 50) throw new Error("O pedido precisa ter itens válidos")
+  const totalItens = entrada.itens.reduce((total, item) => total + item.quantidade, 0)
+  if (totalItens > 99) throw new Error("Quantidade total de itens excedida")
+  if (entrada.itens.some((item) => !item.descricao.trim() || item.descricao.length > 180 || !Number.isInteger(item.quantidade) || item.quantidade < 1 || item.quantidade > 99 || !Number.isFinite(item.preco) || item.preco < 0 || item.preco > 100000)) throw new Error("Dados dos itens inválidos")
   if (entrada.observacao.length > 500) throw new Error("Observação muito longa")
   const id = gerarId()
   const data = new Date()
@@ -361,6 +363,8 @@ export async function mudarStatusPedido(
   id: string,
   status: StatusPedido,
 ): Promise<{ vendasNovas: Venda[] }> {
+  const statusPermitidos: StatusPedido[] = ["pendente", "preparando", "pronta", "saiu_entrega", "entregue", "cancelado"]
+  if (!statusPermitidos.includes(status)) throw new Error("Status de pedido inválido")
   const vendasNovas = await db.transaction(async (tx) => {
     const [pedido] = await tx
       .select()
@@ -369,6 +373,7 @@ export async function mudarStatusPedido(
       .for("update")
 
     if (!pedido) return []
+    if (pedido.status === "cancelado" || (pedido.status === "entregue" && status !== "entregue")) throw new Error("Este pedido não pode voltar para um status anterior")
 
     const novas: Venda[] = []
 

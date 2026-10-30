@@ -68,6 +68,12 @@ const statusInfo: {
     classe: "border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/30 dark:text-sky-200",
   },
   {
+    valor: "saiu_entrega",
+    label: "Saiu para entrega",
+    icon: Send,
+    classe: "border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-900/60 dark:bg-orange-950/30 dark:text-orange-200",
+  },
+  {
     valor: "entregue",
     label: "Entregue",
     icon: CheckCircle2,

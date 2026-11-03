@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { entrarCliente } from "@/app/actions/dados"
+import { cadastrarCliente, entrarCliente } from "@/app/actions/dados"
 import { useStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -13,6 +13,7 @@ export default function LoginPage() {
   const { usuario, hidratado, login } = useStore()
   const router = useRouter()
   const [tipoAcesso, setTipoAcesso] = useState<"cliente" | "profissional">("profissional")
+  const [modoCliente, setModoCliente] = useState<"entrar" | "cadastrar">("entrar")
   const [nomeCliente, setNomeCliente] = useState("")
   const [telefoneCliente, setTelefoneCliente] = useState("")
   const [email, setEmail] = useState("")
@@ -29,12 +30,14 @@ export default function LoginPage() {
     setErro("")
     if (tipoAcesso === "cliente") {
       if (!nomeCliente.trim() || telefoneCliente.replace(/\D/g, "").length !== 13) {
-        setErro("Informe seu primeiro nome e um celular com 13 dígitos, incluindo 55.")
+        setErro(`${modoCliente === "cadastrar" ? "Informe seu nome completo" : "Informe seu primeiro nome"} e um celular com 13 dígitos, incluindo 55.`)
         return
       }
       setEntrando(true)
       try {
-        const cliente = await entrarCliente({ nome: nomeCliente, telefone: telefoneCliente })
+        const cliente = modoCliente === "cadastrar"
+          ? await cadastrarCliente({ nome: nomeCliente, telefone: telefoneCliente })
+          : await entrarCliente({ nome: nomeCliente, telefone: telefoneCliente })
         window.sessionStorage.setItem("snp_cliente", JSON.stringify(cliente))
         router.push("/cardapio")
       } catch (error) {
@@ -121,6 +124,7 @@ export default function LoginPage() {
             <button type="button" role="tab" aria-selected={tipoAcesso === "cliente"} onClick={() => { setTipoAcesso("cliente"); setErro("") }} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition ${tipoAcesso === "cliente" ? "bg-background text-primary shadow-sm" : "text-muted-foreground"}`}><UserRound className="size-4" aria-hidden="true" />Cliente</button>
             <button type="button" role="tab" aria-selected={tipoAcesso === "profissional"} onClick={() => { setTipoAcesso("profissional"); setErro("") }} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition ${tipoAcesso === "profissional" ? "bg-background text-primary shadow-sm" : "text-muted-foreground"}`}><BriefcaseBusiness className="size-4" aria-hidden="true" />Profissional</button>
           </div>
+          {tipoAcesso === "cliente" && <div className="mb-4 flex justify-center gap-4 text-sm"><button type="button" onClick={() => { setModoCliente("entrar"); setErro("") }} className={modoCliente === "entrar" ? "font-bold text-primary" : "text-muted-foreground"}>Entrar</button><button type="button" onClick={() => { setModoCliente("cadastrar"); setErro("") }} className={modoCliente === "cadastrar" ? "font-bold text-primary" : "text-muted-foreground"}>Criar cadastro</button></div>}
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {tipoAcesso === "profissional" && <div className="flex flex-col gap-1.5">
               <label
@@ -176,7 +180,7 @@ export default function LoginPage() {
 
               <Button type="submit" size="lg" className="mt-1 w-full" disabled={tipoAcesso === "profissional" ? !email.trim() || !senha.trim() || entrando : !nomeCliente.trim() || telefoneCliente.replace(/\D/g, "").length !== 13 || entrando}>
                 <LockKeyhole className="size-4" aria-hidden="true" />
-                {entrando ? "Aguarde…" : tipoAcesso === "cliente" ? "Ver cardápio" : "Entrar"}
+                {entrando ? "Aguarde…" : tipoAcesso === "cliente" ? (modoCliente === "cadastrar" ? "Criar cadastro" : "Entrar no cardápio") : "Entrar"}
               </Button>
             </form>
           </div>

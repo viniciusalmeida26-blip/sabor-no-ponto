@@ -238,6 +238,15 @@ export async function carregarCliente(telefone: string) {
   return linha
 }
 
+export async function cadastrarCliente(entrada: { nome: string; telefone: string }) {
+  const normalizado = normalizarTelefone(entrada.telefone)
+  if (normalizado.length !== 13 || !normalizado.startsWith("55")) throw new Error("Use um celular brasileiro com 13 dígitos")
+  if (entrada.nome.trim().split(/\s+/).length < 2) throw new Error("Informe nome e sobrenome para criar o cadastro")
+  await garantirTabelasCliente()
+  if (await carregarCliente(normalizado)) throw new Error("Este telefone já possui cadastro. Use a opção Entrar.")
+  return criarOuAtualizarCliente({ nome: entrada.nome, telefone: normalizado })
+}
+
 export async function entrarCliente(entrada: { nome: string; telefone: string }) {
   const normalizado = normalizarTelefone(entrada.telefone)
   const nomeInformado = entrada.nome.trim().split(/\s+/)[0]

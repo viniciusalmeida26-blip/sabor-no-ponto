@@ -88,7 +88,9 @@ async function garantirTabelasCliente() {
   await db.execute(sql`ALTER TABLE clientes ADD COLUMN IF NOT EXISTS id TEXT`)
   await db.execute(sql`ALTER TABLE clientes ADD COLUMN IF NOT EXISTS email TEXT`)
   await db.execute(sql`UPDATE clientes SET id = COALESCE(id, md5(telefone)) WHERE id IS NULL`)
+  await db.execute(sql`ALTER TABLE clientes ALTER COLUMN id SET NOT NULL`)
   await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS clientes_telefone_unico ON clientes (telefone)`)
+  await db.execute(sql`DO $$ BEGIN ALTER TABLE clientes ADD CONSTRAINT clientes_id_unico UNIQUE (id); EXCEPTION WHEN duplicate_object THEN NULL; END $$`)
   await db.execute(sql`CREATE TABLE IF NOT EXISTS enderecos_clientes (
     id TEXT PRIMARY KEY,
     cliente_id TEXT NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,

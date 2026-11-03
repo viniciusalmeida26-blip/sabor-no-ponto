@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import { entrarCliente } from "@/app/actions/dados"
 import { useStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -23,15 +24,23 @@ export default function LoginPage() {
     if (hidratado && usuario) router.replace("/vendas")
   }, [hidratado, usuario, router])
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setErro("")
     if (tipoAcesso === "cliente") {
-      if (!nomeCliente.trim() || telefoneCliente.replace(/\D/g, "").length < 10) {
-        setErro("Informe seu nome e um telefone válido.")
+      if (!nomeCliente.trim() || telefoneCliente.replace(/\D/g, "").length !== 13) {
+        setErro("Informe seu primeiro nome e um celular com 13 dígitos, incluindo 55.")
         return
       }
-      window.sessionStorage.setItem("snp_cliente", JSON.stringify({ nome: nomeCliente.trim(), telefone: telefoneCliente.trim() }))
-      router.push("/cardapio")
+      setEntrando(true)
+      try {
+        const cliente = await entrarCliente({ nome: nomeCliente, telefone: telefoneCliente })
+        window.sessionStorage.setItem("snp_cliente", JSON.stringify(cliente))
+        router.push("/cardapio")
+      } catch (error) {
+        setErro(error instanceof Error ? error.message : "Não foi possível entrar com esses dados.")
+        setEntrando(false)
+      }
       return
     }
     if (!email.trim() || !senha.trim()) {
@@ -138,7 +147,7 @@ export default function LoginPage() {
 
             {tipoAcesso === "cliente" && <div className="flex flex-col gap-1.5">
               <label htmlFor="telefone" className="text-sm font-medium text-foreground">Telefone</label>
-              <input id="telefone" type="tel" autoComplete="tel" value={telefoneCliente} onChange={(e) => setTelefoneCliente(e.target.value)} placeholder="(41) 99999-9999" className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none ring-ring/50 transition focus:border-ring focus:ring-2" />
+              <input id="telefone" type="tel" autoComplete="tel" value={telefoneCliente} onChange={(e) => setTelefoneCliente(e.target.value)} placeholder="+55 (44) 99999-9999" className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none ring-ring/50 transition focus:border-ring focus:ring-2" />
             </div>}
 
             {tipoAcesso === "profissional" && <div className="flex flex-col gap-1.5">
@@ -165,7 +174,7 @@ export default function LoginPage() {
               </p>
             )}
 
-              <Button type="submit" size="lg" className="mt-1 w-full" disabled={tipoAcesso === "profissional" ? !email.trim() || !senha.trim() || entrando : !nomeCliente.trim() || telefoneCliente.replace(/\D/g, "").length < 10 || entrando}>
+              <Button type="submit" size="lg" className="mt-1 w-full" disabled={tipoAcesso === "profissional" ? !email.trim() || !senha.trim() || entrando : !nomeCliente.trim() || telefoneCliente.replace(/\D/g, "").length !== 13 || entrando}>
                 <LockKeyhole className="size-4" aria-hidden="true" />
                 {entrando ? "Aguarde…" : tipoAcesso === "cliente" ? "Ver cardápio" : "Entrar"}
               </Button>

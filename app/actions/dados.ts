@@ -238,6 +238,20 @@ export async function carregarCliente(telefone: string) {
   return linha
 }
 
+export async function entrarCliente(entrada: { nome: string; telefone: string }) {
+  const normalizado = normalizarTelefone(entrada.telefone)
+  const nomeInformado = entrada.nome.trim().split(/\s+/)[0]
+  if (!nomeInformado) throw new Error("Informe seu primeiro nome")
+  if (normalizado.length !== 13 || !normalizado.startsWith("55")) throw new Error("Use um celular brasileiro com 13 dígitos")
+  await garantirTabelasCliente()
+  const cliente = await carregarCliente(normalizado)
+  if (!cliente) throw new Error("Telefone não cadastrado. Crie seu perfil antes de entrar.")
+  const primeiroNomeCadastrado = cliente.nome.trim().split(/\s+/)[0]
+  const normalizarNome = (valor: string) => valor.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+  if (normalizarNome(nomeInformado) !== normalizarNome(primeiroNomeCadastrado)) throw new Error("O primeiro nome não corresponde ao telefone cadastrado.")
+  return { id: cliente.id, nome: cliente.nome, telefone: cliente.telefone }
+}
+
 export async function verificarTelefoneCliente(telefone: string) {
   const normalizado = normalizarTelefone(telefone)
   if (normalizado.length < 10) throw new Error("Informe um telefone válido com DDD")

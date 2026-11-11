@@ -18,6 +18,8 @@ import {
   mudarStatusPedido,
   resetarPedidosEntregues as resetarPedidosEntreguesNoBanco,
   obterPerfil,
+  atualizarFotoPerfil as atualizarFotoPerfilNoBanco,
+  criarOuAtualizarCliente,
 } from "@/app/actions/dados"
 
 export type FormaPagamento = "dinheiro" | "cartao" | "pix"
@@ -38,7 +40,7 @@ export type Despesa = {
   data: string // ISO
 }
 
-export type StatusPedido = "pendente" | "preparando" | "pronta" | "entregue" | "cancelado"
+export type StatusPedido = "pendente" | "preparando" | "pronta" | "saiu_entrega" | "entregue" | "cancelado"
 
 export type CategoriaProduto = "marmita" | "bebida" | "sobremesa" | "fitness"
 
@@ -130,8 +132,8 @@ type StoreContextType = {
   addDespesa: (d: Omit<Despesa, "id" | "data">) => void
   removeDespesa: (id: string) => void
   addPedido: (
-    p: Omit<Pedido, "id" | "data" | "status" | "vendaRegistrada">,
-  ) => void
+p: Omit<Pedido, "id" | "data" | "status" | "vendaRegistrada"> & { telefone?: string },
+  ) => Promise<void>
   removePedido: (id: string) => void
   atualizarStatusPedido: (id: string, status: StatusPedido) => void
   ultimoResetPedidos: string | null
@@ -262,12 +264,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return true
   }
 
-  function atualizarFotoPerfil(fotoUrl: string) {
-    setUsuario((atual) => {
-      if (!atual) return atual
-      const atualizado = { ...atual, fotoUrl }
-      return atualizado
-    })
+  async function atualizarFotoPerfil(fotoUrl: string) {
+    const atual = usuario
+    if (!atual) return
+    const anterior = atual.fotoUrl
+    setUsuario({ ...atual, fotoUrl })
+    try {
+      const salvo = await atualizarFotoPerfilNoBanco(atual.email, fotoUrl)
+      if (!salvo) throw new Error("Usuário não encontrado no banco")
+      window.localStorage.setItem(CHAVE_USUARIO, JSON.stringify({ ...atual, fotoUrl }))
+    } catch (erro) {
+      setUsuario({ ...atual, fotoUrl: anterior })
+      console.log("[v0] erro ao salvar foto de perfil:", erro)
+      throw erro
+    }
   }
 
   function logout() {
@@ -281,15 +291,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setVendas((atual) => [nova, ...atual])
     } catch (e) {
       console.log("[v0] erro ao criar venda:", e)
+      throw e
     }
   }
 
   async function removeVenda(id: string) {
-    setVendas((atual) => atual.filter((v) => v.id !== id))
     try {
       await excluirVenda(id)
+      setVendas((atual) => atual.filter((v) => v.id !== id))
     } catch (e) {
       console.log("[v0] erro ao excluir venda:", e)
+      throw e
     }
   }
 
@@ -299,47 +311,50 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setDespesas((atual) => [nova, ...atual])
     } catch (e) {
       console.log("[v0] erro ao criar despesa:", e)
+      throw e
     }
   }
 
   async function removeDespesa(id: string) {
-    setDespesas((atual) => atual.filter((d) => d.id !== id))
     try {
       await excluirDespesa(id)
+      setDespesas((atual) => atual.filter((d) => d.id !== id))
     } catch (e) {
       console.log("[v0] erro ao excluir despesa:", e)
+      throw e
     }
   }
 
-  async function addPedido(
-    p: Omit<Pedido, "id" | "data" | "status" | "vendaRegistrada">,
+async function addPedido(
+  p: Omit<Pedido, "id" | "data" | "status" | "vendaRegistrada"> & { telefone?: string },
   ) {
     try {
       const novo = await criarPedido(p)
       setPedidos((atual) => [novo, ...atual])
     } catch (e) {
       console.log("[v0] erro ao criar pedido:", e)
+      throw e
     }
   }
 
   async function removePedido(id: string) {
-    setPedidos((atual) => atual.filter((p) => p.id !== id))
     try {
       await excluirPedido(id)
+      setPedidos((atual) => atual.filter((p) => p.id !== id))
     } catch (e) {
       console.log("[v0] erro ao excluir pedido:", e)
+      throw e
     }
   }
 
   async function resetarPedidosEntregues() {
     const data = await resetarPedidosEntreguesNoBanco()
-    setPedidos((atual) => atual.filter((pedido) => pedido.status !== "entregue"))
     setUltimoResetPedidos(data)
     return data
   }
 
   async function atualizarStatusPedido(id: string, status: StatusPedido) {
-    // Atualiza o status na tela imediatamente.
+    const pedidoAnterior = pedidos.find((pedido) => pedido.id === id)
     setPedidos((atual) =>
       atual.map((p) =>
         p.id === id
@@ -358,7 +373,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setVendas((atual) => [...vendasNovas, ...atual])
       }
     } catch (e) {
+      if (pedidoAnterior) setPedidos((atual) => atual.map((pedido) => pedido.id === pedidoAnterior.id ? pedidoAnterior : pedido))
       console.log("[v0] erro ao atualizar status do pedido:", e)
+      throw e
     }
   }
 
@@ -417,8 +434,9 @@ export const rotuloForma: Record<FormaPagamento, string> = {
 export const rotuloStatus: Record<StatusPedido, string> = {
   pendente: "Pendente",
   preparando: "Preparando",
-  pronta: "Pronta",
-  entregue: "Entregue",
+    pronta: "Pronta",
+    saiu_entrega: "Saiu para entrega",
+    entregue: "Entregue",
   cancelado: "Cancelado",
 }
 

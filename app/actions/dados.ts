@@ -8,11 +8,11 @@ import {
   pedidoResets as tPedidoResets,
   type ItemPedido,
 } from "@/lib/db/schema"
-import { and, desc, eq } from "drizzle-orm"
+import { and, desc, eq, sql } from "drizzle-orm"
 import { usuarios as tUsuarios } from "@/lib/db/schema"
 
 export type FormaPagamento = "dinheiro" | "cartao" | "pix"
-export type StatusPedido = "pendente" | "preparando" | "pronta" | "entregue" | "cancelado"
+export type StatusPedido = "pendente" | "preparando" | "pronta" | "saiu_entrega" | "entregue" | "cancelado"
 
 export type Venda = {
   id: string
@@ -55,6 +55,8 @@ export async function obterPerfil(email: string) {
 }
 
 export async function atualizarFotoPerfil(email: string, fotoUrl: string | null) {
+  if (!email.trim()) throw new Error("E-mail do usuário é obrigatório")
+  if (fotoUrl !== null && fotoUrl.length > 2_000_000) throw new Error("Imagem de perfil muito grande")
   const [usuario] = await db
     .update(tUsuarios)
     .set({ image: fotoUrl })
@@ -67,11 +69,58 @@ function gerarId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
 }
 
+function normalizarTelefone(telefone: string) {
+  const digitos = telefone.replace(/\D/g, "")
+  if (digitos.startsWith("55")) return digitos.slice(0, 13)
+  if (digitos.length === 10 || digitos.length === 11) return `55${digitos}`
+  return digitos
+}
+
+async function garantirTabelasCliente() {
+  await db.execute(sql`CREATE TABLE IF NOT EXISTS clientes (
+    id TEXT PRIMARY KEY,
+    telefone TEXT NOT NULL,
+    nome TEXT NOT NULL,
+    email TEXT,
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`)
+  await db.execute(sql`ALTER TABLE clientes ADD COLUMN IF NOT EXISTS id TEXT`)
+  await db.execute(sql`ALTER TABLE clientes ADD COLUMN IF NOT EXISTS email TEXT`)
+  await db.execute(sql`UPDATE clientes SET id = COALESCE(id, md5(telefone)) WHERE id IS NULL`)
+  await db.execute(sql`ALTER TABLE clientes ALTER COLUMN id SET NOT NULL`)
+  await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS clientes_telefone_unico ON clientes (telefone)`)
+  await db.execute(sql`DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'clientes_id_unique_constraint') THEN ALTER TABLE clientes ADD CONSTRAINT clientes_id_unique_constraint UNIQUE (id); END IF; END $$`)
+  await db.execute(sql`CREATE TABLE IF NOT EXISTS enderecos_clientes (
+    id TEXT PRIMARY KEY,
+    cliente_id TEXT NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
+    etiqueta TEXT NOT NULL,
+    cep TEXT NOT NULL,
+    rua TEXT NOT NULL,
+    numero TEXT NOT NULL,
+    complemento TEXT NOT NULL DEFAULT '',
+    bairro TEXT NOT NULL,
+    cidade TEXT NOT NULL,
+    referencia TEXT NOT NULL DEFAULT '',
+    principal BOOLEAN NOT NULL DEFAULT FALSE,
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`)
+  await db.execute(sql`CREATE TABLE IF NOT EXISTS favoritos_clientes (
+    cliente_id TEXT NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
+    produto_id TEXT NOT NULL,
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (cliente_id, produto_id)
+  )`)
+}
+
+async function garantirTabelaClientes() {
+  await garantirTabelasCliente()
+}
+
 // ---------- Leitura ----------
 
 export async function resetarPedidosEntregues(): Promise<string> {
   const agora = new Date()
-  await db.delete(tPedidos).where(eq(tPedidos.status, "entregue"))
   await db
     .insert(tPedidoResets)
     .values({ id: 1, resetAt: agora })
@@ -81,13 +130,7 @@ export async function resetarPedidosEntregues(): Promise<string> {
 
 async function garantirResetDiario() {
   const [ultimo] = await db.select().from(tPedidoResets).where(eq(tPedidoResets.id, 1))
-  if (!ultimo) return null
-  const agora = new Date()
-  const ultimoDia = ultimo.resetAt.toLocaleDateString("pt-BR")
-  if (ultimoDia !== agora.toLocaleDateString("pt-BR")) {
-    return resetarPedidosEntregues()
-  }
-  return ultimo.resetAt.toISOString()
+  return ultimo?.resetAt.toISOString() ?? null
 }
 
 export async function carregarDados(): Promise<{
@@ -186,19 +229,152 @@ export async function excluirDespesa(id: string) {
 
 // ---------- Pedidos ----------
 
+export async function carregarCliente(telefone: string) {
+  const normalizado = normalizarTelefone(telefone)
+  if (normalizado.length < 10) return null
+  await garantirTabelaClientes()
+  const resultado = await db.execute(sql`SELECT id, telefone, nome FROM clientes WHERE telefone = ${normalizado} LIMIT 1`)
+  const linha = (resultado.rows[0] ?? null) as { id: string; telefone: string; nome: string } | null
+  return linha
+}
+
+export async function cadastrarCliente(entrada: { nome: string; telefone: string }) {
+  const normalizado = normalizarTelefone(entrada.telefone)
+  if (normalizado.length !== 13 || !normalizado.startsWith("55")) throw new Error("Use um celular brasileiro com 13 dígitos")
+  if (entrada.nome.trim().split(/\s+/).length < 2) throw new Error("Informe nome e sobrenome para criar o cadastro")
+  await garantirTabelasCliente()
+  if (await carregarCliente(normalizado)) throw new Error("Este telefone já possui cadastro. Use a opção Entrar.")
+  return criarOuAtualizarCliente({ nome: entrada.nome, telefone: normalizado })
+}
+
+export async function entrarCliente(entrada: { nome: string; telefone: string }) {
+  const normalizado = normalizarTelefone(entrada.telefone)
+  const nomeInformado = entrada.nome.trim().split(/\s+/)[0]
+  if (!nomeInformado) throw new Error("Informe seu primeiro nome")
+  if (normalizado.length !== 13 || !normalizado.startsWith("55")) throw new Error("Use um celular brasileiro com 13 dígitos")
+  await garantirTabelasCliente()
+  const cliente = await carregarCliente(normalizado)
+  if (!cliente) throw new Error("Telefone não cadastrado. Crie seu perfil antes de entrar.")
+  const primeiroNomeCadastrado = cliente.nome.trim().split(/\s+/)[0]
+  const normalizarNome = (valor: string) => valor.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+  if (normalizarNome(nomeInformado) !== normalizarNome(primeiroNomeCadastrado)) throw new Error("O primeiro nome não corresponde ao telefone cadastrado.")
+  return { id: cliente.id, nome: cliente.nome, telefone: cliente.telefone }
+}
+
+export async function verificarTelefoneCliente(telefone: string) {
+  const normalizado = normalizarTelefone(telefone)
+  if (normalizado.length < 10) throw new Error("Informe um telefone válido com DDD")
+  const cliente = await carregarCliente(normalizado)
+  return { telefone: normalizado, existe: Boolean(cliente), nome: cliente?.nome ?? "" }
+}
+
+export async function atualizarCliente(entrada: { nome: string; telefone: string }) {
+  const verificacao = await verificarTelefoneCliente(entrada.telefone)
+  const cliente = await criarOuAtualizarCliente({ nome: entrada.nome, telefone: verificacao.telefone })
+  return { ...cliente, telefoneVerificado: true, eraExistente: verificacao.existe }
+}
+
+export async function criarOuAtualizarCliente(entrada: { nome: string; telefone: string }) {
+  const nome = entrada.nome.trim()
+  const telefone = normalizarTelefone(entrada.telefone)
+  if (!nome || nome.length > 120) throw new Error("Nome do cliente inválido")
+  if (telefone.length !== 13 || !telefone.startsWith("55")) throw new Error("Use um celular brasileiro com 13 dígitos, por exemplo 5544999999999")
+  await garantirTabelasCliente()
+  const id = `cli_${telefone}`
+  await db.execute(sql`INSERT INTO clientes (id, telefone, nome) VALUES (${id}, ${telefone}, ${nome}) ON CONFLICT (telefone) DO UPDATE SET nome = EXCLUDED.nome, atualizado_em = NOW()`)
+  return { id, nome, telefone }
+}
+
+export type EnderecoCliente = {
+  id: string
+  etiqueta: string
+  cep: string
+  rua: string
+  numero: string
+  complemento: string
+  bairro: string
+  cidade: string
+  referencia: string
+  principal: boolean
+}
+
+export async function listarEnderecosCliente(telefone: string): Promise<EnderecoCliente[]> {
+  const normalizado = normalizarTelefone(telefone)
+  if (normalizado.length < 10) return []
+  await garantirTabelasCliente()
+  const linhas = await db.execute(sql`SELECT e.id, e.etiqueta, e.cep, e.rua, e.numero, e.complemento, e.bairro, e.cidade, e.referencia, e.principal FROM enderecos_clientes e JOIN clientes c ON c.id = e.cliente_id WHERE c.telefone = ${normalizado} ORDER BY e.principal DESC, e.criado_em DESC`)
+  return linhas.rows as EnderecoCliente[]
+}
+
+export async function salvarEnderecoCliente(telefone: string, endereco: Omit<EnderecoCliente, "id"> & { id?: string }) {
+  const normalizado = normalizarTelefone(telefone)
+  if (normalizado.length < 10) throw new Error("Telefone do cliente inválido")
+  await garantirTabelasCliente()
+  const cliente = await carregarCliente(normalizado)
+  if (!cliente) throw new Error("Cliente não encontrado")
+  const id = endereco.id ?? gerarId()
+  if (endereco.principal) await db.execute(sql`UPDATE enderecos_clientes SET principal = FALSE WHERE cliente_id = ${`cli_${normalizado}`}`)
+  await db.execute(sql`INSERT INTO enderecos_clientes (id, cliente_id, etiqueta, cep, rua, numero, complemento, bairro, cidade, referencia, principal) VALUES (${id}, ${`cli_${normalizado}`}, ${endereco.etiqueta}, ${endereco.cep}, ${endereco.rua}, ${endereco.numero}, ${endereco.complemento}, ${endereco.bairro}, ${endereco.cidade}, ${endereco.referencia}, ${endereco.principal}) ON CONFLICT (id) DO UPDATE SET etiqueta = EXCLUDED.etiqueta, cep = EXCLUDED.cep, rua = EXCLUDED.rua, numero = EXCLUDED.numero, complemento = EXCLUDED.complemento, bairro = EXCLUDED.bairro, cidade = EXCLUDED.cidade, referencia = EXCLUDED.referencia, principal = EXCLUDED.principal`)
+  return { ...endereco, id }
+}
+
+export async function excluirEnderecoCliente(telefone: string, id: string) {
+  const normalizado = normalizarTelefone(telefone)
+  await garantirTabelasCliente()
+  await db.execute(sql`DELETE FROM enderecos_clientes WHERE id = ${id} AND cliente_id = ${`cli_${normalizado}`}`)
+}
+
+export async function listarFavoritosCliente(telefone: string): Promise<string[]> {
+  const normalizado = normalizarTelefone(telefone)
+  if (normalizado.length < 10) return []
+  await garantirTabelasCliente()
+  const linhas = await db.execute(sql`SELECT f.produto_id FROM favoritos_clientes f JOIN clientes c ON c.id = f.cliente_id WHERE c.telefone = ${normalizado} ORDER BY f.criado_em DESC`)
+  return linhas.rows.map((linha) => String((linha as { produto_id: string }).produto_id))
+}
+
+export async function alternarFavoritoCliente(telefone: string, produtoId: string) {
+  const normalizado = normalizarTelefone(telefone)
+  if (normalizado.length < 10) throw new Error("Telefone do cliente inválido")
+  await garantirTabelasCliente()
+  const cliente = await carregarCliente(normalizado)
+  if (!cliente) throw new Error("Cliente não encontrado")
+  const existente = await db.execute(sql`SELECT 1 FROM favoritos_clientes WHERE cliente_id = ${cliente.id} AND produto_id = ${produtoId} LIMIT 1`)
+  if (existente.rows.length) await db.execute(sql`DELETE FROM favoritos_clientes WHERE cliente_id = ${cliente.id} AND produto_id = ${produtoId}`)
+  else await db.execute(sql`INSERT INTO favoritos_clientes (cliente_id, produto_id) VALUES (${cliente.id}, ${produtoId})`)
+  return !existente.rows.length
+}
+
+export async function carregarPedidosDoCliente(telefone: string): Promise<Pedido[]> {
+  const normalizado = normalizarTelefone(telefone)
+  if (normalizado.length < 10) return []
+  const linhas = await db.select().from(tPedidos).where(sql`${tPedidos.observacao} LIKE ${`Telefone: %${normalizado}%`}`).orderBy(desc(tPedidos.data))
+  return linhas.map((p) => ({ id: p.id, cliente: p.cliente, itens: p.itens, observacao: p.observacao, forma: p.forma as FormaPagamento, status: p.status as StatusPedido, vendaRegistrada: p.vendaRegistrada, data: p.data.toISOString() }))
+}
+
 export async function criarPedido(entrada: {
   cliente: string
+  telefone?: string
   itens: ItemPedido[]
   observacao: string
   forma: FormaPagamento
 }): Promise<Pedido> {
+  const cliente = entrada.cliente.trim()
+  const telefone = normalizarTelefone(entrada.telefone ?? "")
+  if (!cliente || cliente.length > 120) throw new Error("Nome do cliente inválido")
+  if (entrada.telefone && telefone.length < 10) throw new Error("Telefone do cliente inválido")
+  if (telefone) await criarOuAtualizarCliente({ nome: cliente, telefone })
+  if (!entrada.itens.length || entrada.itens.length > 50) throw new Error("O pedido precisa ter itens válidos")
+  const totalItens = entrada.itens.reduce((total, item) => total + item.quantidade, 0)
+  if (totalItens > 99) throw new Error("Quantidade total de itens excedida")
+  if (entrada.itens.some((item) => !item.descricao.trim() || item.descricao.length > 180 || !Number.isInteger(item.quantidade) || item.quantidade < 1 || item.quantidade > 99 || !Number.isFinite(item.preco) || item.preco < 0 || item.preco > 100000)) throw new Error("Dados dos itens inválidos")
+  if (entrada.observacao.length > 500) throw new Error("Observação muito longa")
   const id = gerarId()
   const data = new Date()
   await db.insert(tPedidos).values({
     id,
-    cliente: entrada.cliente,
+    cliente,
     itens: entrada.itens,
-    observacao: entrada.observacao,
+    observacao: `${telefone ? `Telefone: ${telefone}\n` : ""}${entrada.observacao}`.trim(),
     forma: entrada.forma,
     status: "pendente",
     vendaRegistrada: false,
@@ -210,6 +386,7 @@ export async function criarPedido(entrada: {
     status: "pendente",
     vendaRegistrada: false,
     ...entrada,
+    cliente,
   }
 }
 
@@ -223,6 +400,8 @@ export async function mudarStatusPedido(
   id: string,
   status: StatusPedido,
 ): Promise<{ vendasNovas: Venda[] }> {
+  const statusPermitidos: StatusPedido[] = ["pendente", "preparando", "pronta", "saiu_entrega", "entregue", "cancelado"]
+  if (!statusPermitidos.includes(status)) throw new Error("Status de pedido inválido")
   const vendasNovas = await db.transaction(async (tx) => {
     const [pedido] = await tx
       .select()
@@ -231,6 +410,7 @@ export async function mudarStatusPedido(
       .for("update")
 
     if (!pedido) return []
+    if (pedido.status === "cancelado" || (pedido.status === "entregue" && status !== "entregue")) throw new Error("Este pedido não pode voltar para um status anterior")
 
     const novas: Venda[] = []
 

@@ -68,6 +68,12 @@ const statusInfo: {
     classe: "border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/30 dark:text-sky-200",
   },
   {
+    valor: "saiu_entrega",
+    label: "Saiu para entrega",
+    icon: Send,
+    classe: "border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-900/60 dark:bg-orange-950/30 dark:text-orange-200",
+  },
+  {
     valor: "entregue",
     label: "Entregue",
     icon: CheckCircle2,
@@ -116,12 +122,16 @@ export default function PedidosPage() {
   const [forma, setForma] = useState<FormaPagamento>("dinheiro")
   const [quantidades, setQuantidades] = useState<Record<string, number>>({})
   const [busca, setBusca] = useState("")
+  const [filtroStatus, setFiltroStatus] = useState<StatusPedido | "todos">("todos")
 
   const pedidosFiltrados = useMemo(() => {
     const termo = busca.trim().toLocaleLowerCase("pt-BR")
-    if (!termo) return pedidos
-    return pedidos.filter((pedido) => `${pedido.cliente} ${pedido.id} ${pedido.itens.map((item) => item.descricao).join(" ")}`.toLocaleLowerCase("pt-BR").includes(termo))
-  }, [busca, pedidos])
+    return pedidos.filter((pedido) => {
+      const correspondeStatus = filtroStatus === "todos" || pedido.status === filtroStatus
+      const correspondeBusca = !termo || `${pedido.cliente} ${pedido.id} ${pedido.itens.map((item) => item.descricao).join(" ")}`.toLocaleLowerCase("pt-BR").includes(termo)
+      return correspondeStatus && correspondeBusca
+    })
+  }, [busca, filtroStatus, pedidos])
 
   const pedidosPorStatus = useMemo(
     () =>
@@ -244,6 +254,10 @@ export default function PedidosPage() {
           </p>
         </div>
 
+        <section aria-label="Resumo dos pedidos" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          {statusInfo.map((status) => { const Icon = status.icon; const total = pedidosFiltrados.filter((pedido) => pedido.status === status.valor).length; return <div key={status.valor} className="rounded-2xl border border-border bg-card p-4 shadow-sm"><div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">{status.label}</span><Icon className="size-4 text-muted-foreground" aria-hidden="true" /></div><p className="mt-2 text-2xl font-bold text-foreground">{total}</p><p className="mt-1 text-xs text-muted-foreground">{total === 1 ? "pedido" : "pedidos"}</p></div> })}
+        </section>
+
         <section className="flex flex-col gap-4 rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between" aria-labelledby="reset-pedidos-title">
           <div className="flex items-start gap-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -252,12 +266,12 @@ export default function PedidosPage() {
             <div>
               <h2 id="reset-pedidos-title" className="text-sm font-semibold text-foreground">Fechamento diário</h2>
               <p className="text-xs text-muted-foreground">
-                Pedidos entregues são mantidos nas vendas e retirados da fila após o reset.
+                Pedidos entregues permanecem no histórico e nas vendas. O fechamento apenas registra a data do último fechamento.
               </p>
               <p className="mt-1 text-xs font-medium text-primary">
                 {ultimoResetPedidos
-                  ? `Último reset: ${new Date(ultimoResetPedidos).toLocaleString("pt-BR")}`
-                  : "Ainda não houve reset registrado"}
+                  ? `Último fechamento: ${new Date(ultimoResetPedidos).toLocaleString("pt-BR")}`
+                  : "Ainda não houve fechamento registrado"}
               </p>
             </div>
           </div>
@@ -265,24 +279,24 @@ export default function PedidosPage() {
             <DialogTrigger asChild>
               <Button type="button" variant="outline" className="shrink-0 border-primary/30 bg-background">
                 <RefreshCw className="size-4" aria-hidden="true" />
-                Resetar pedidos do dia
+                Registrar fechamento do dia
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <AlertTriangle className="size-5 text-primary" aria-hidden="true" />
-                  Confirmar reset diário
+                  Confirmar fechamento do dia
                 </DialogTitle>
                 <DialogDescription>
-                  Os pedidos entregues sairão da fila atual, mas suas vendas continuarão no histórico e nos relatórios. Pedidos pendentes e em preparo não ser��o alterados.
+                  O fechamento registra a data da operação. Nenhum pedido, venda ou relatório será apagado ou alterado.
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setDialogResetAberto(false)} disabled={resetando}>Cancelar</Button>
                 <Button type="button" onClick={confirmarReset} disabled={resetando}>
                   <RefreshCw className={`size-4 ${resetando ? "animate-spin" : ""}`} aria-hidden="true" />
-                  {resetando ? "Resetando..." : "Confirmar reset"}
+                  {resetando ? "Registrando..." : "Confirmar fechamento"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -402,9 +416,15 @@ export default function PedidosPage() {
               Organize a produção e avance cada pedido com um toque.
             </p>
           </div>
-          <div className="relative w-full sm:max-w-sm">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-            <input value={busca} onChange={(event) => setBusca(event.target.value)} placeholder="Buscar por cliente ou item..." aria-label="Buscar pedidos" className="h-10 w-full rounded-lg border border-input bg-background pl-9 pr-3 text-sm text-foreground outline-none ring-ring/50 transition focus:border-ring focus:ring-2" />
+          <div className="flex flex-col gap-3">
+            <div className="relative w-full sm:max-w-sm">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+              <input value={busca} onChange={(event) => setBusca(event.target.value)} placeholder="Buscar por cliente ou item..." aria-label="Buscar pedidos" className="h-10 w-full rounded-lg border border-input bg-background pl-9 pr-3 text-sm text-foreground outline-none ring-ring/50 transition focus:border-ring focus:ring-2" />
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Filtrar pedidos por status" role="group">
+              <button type="button" onClick={() => setFiltroStatus("todos")} aria-pressed={filtroStatus === "todos"} className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${filtroStatus === "todos" ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground hover:bg-muted"}`}>Todos ({pedidos.length})</button>
+              {statusInfo.map((status) => { const total = pedidos.filter((pedido) => pedido.status === status.valor).length; return <button key={status.valor} type="button" onClick={() => setFiltroStatus(status.valor)} aria-pressed={filtroStatus === status.valor} className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${filtroStatus === status.valor ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground hover:bg-muted"}`}>{status.label} ({total})</button> })}
+            </div>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-3">

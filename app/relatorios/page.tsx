@@ -13,6 +13,7 @@ import {
   Wallet,
   Plus,
   Trash2,
+  Download,
 } from "lucide-react"
 
 type Periodo = "hoje" | "semana" | "mes"
@@ -41,11 +42,13 @@ function dentroDoPeriodo(iso: string, periodo: Periodo) {
 }
 
 export default function RelatoriosPage() {
-  const { vendas, despesas, addDespesa, removeDespesa } = useStore()
+  const { vendas, despesas, pedidos, addDespesa, removeDespesa } = useStore()
   const [periodo, setPeriodo] = useState<Periodo>("hoje")
 
   const [descDespesa, setDescDespesa] = useState("")
   const [valorDespesa, setValorDespesa] = useState("")
+  const [erroDespesa, setErroDespesa] = useState("")
+  const [sucessoDespesa, setSucessoDespesa] = useState("")
 
   const vendasFiltradas = useMemo(
     () => vendas.filter((v) => dentroDoPeriodo(v.data, periodo)),
@@ -66,6 +69,9 @@ export default function RelatoriosPage() {
     [despesasFiltradas],
   )
   const lucro = totalVendas - totalDespesas
+  const pedidosFiltrados = pedidos.filter((pedido) => dentroDoPeriodo(pedido.data, periodo))
+  const pedidosConcluidos = pedidosFiltrados.filter((pedido) => pedido.status === "entregue").length
+  const ticketMedio = vendasFiltradas.length > 0 ? totalVendas / vendasFiltradas.length : 0
 
   const porForma = useMemo(() => {
     const base = { dinheiro: 0, cartao: 0, pix: 0 }
@@ -75,6 +81,21 @@ export default function RelatoriosPage() {
     return base
   }, [vendasFiltradas])
 
+  function exportarRelatorio() {
+    const linhas = [
+      ["Tipo", "Descrição", "Valor", "Data"],
+      ...vendasFiltradas.map((venda) => ["Entrada", venda.descricao, String(venda.quantidade * venda.valorUnitario), venda.data]),
+      ...despesasFiltradas.map((despesa) => ["Saída", despesa.descricao, String(-despesa.valor), despesa.data]),
+    ]
+    const csv = linhas.map((linha) => linha.map((valor) => `"${valor.replaceAll('"', '""')}"`).join(",")).join("\n")
+    const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" }))
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `sabor-no-ponto-relatorio-${periodo}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   const iconesForma = {
     dinheiro: Banknote,
     cartao: CreditCard,
@@ -83,23 +104,36 @@ export default function RelatoriosPage() {
 
   function handleDespesa(e: React.FormEvent) {
     e.preventDefault()
+    setErroDespesa("")
+    setSucessoDespesa("")
     const val = Number(valorDespesa)
-    if (!descDespesa.trim() || !val) return
+    if (!descDespesa.trim()) {
+      setErroDespesa("Informe uma descrição para a despesa.")
+      return
+    }
+    if (!Number.isFinite(val) || val <= 0) {
+      setErroDespesa("Informe um valor maior que zero.")
+      return
+    }
     addDespesa({ descricao: descDespesa.trim(), valor: val })
     setDescDespesa("")
     setValorDespesa("")
+    setSucessoDespesa("Despesa registrada com sucesso.")
   }
 
   return (
     <AppShell>
       <div className="flex flex-col gap-6">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">
-            Relatórios e Fechamento
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Resumo financeiro por período.
-          </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">
+              Relatórios e Fechamento
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Resumo financeiro por período.
+            </p>
+          </div>
+          <Button type="button" variant="outline" onClick={exportarRelatorio} className="w-full gap-2 sm:w-auto"><Download className="size-4" aria-hidden="true" />Exportar CSV</Button>
         </div>
 
         <div className="grid grid-cols-3 gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm">
@@ -123,7 +157,7 @@ export default function RelatoriosPage() {
           })}
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
           <div className="rounded-2xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
             <div className="flex items-center gap-2 text-accent">
               <TrendingUp className="size-4" aria-hidden="true" />
@@ -155,6 +189,8 @@ export default function RelatoriosPage() {
               {formatarBRL(lucro)}
             </p>
           </div>
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"><p className="text-xs font-medium text-muted-foreground">Pedidos</p><p className="mt-2 text-xl font-bold text-foreground">{pedidosFiltrados.length}</p><p className="mt-1 text-xs text-muted-foreground">{pedidosConcluidos} concluído(s)</p></div>
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"><p className="text-xs font-medium text-muted-foreground">Ticket médio</p><p className="mt-2 text-xl font-bold text-foreground">{formatarBRL(ticketMedio)}</p><p className="mt-1 text-xs text-muted-foreground">Por venda registrada</p></div>
         </div>
 
         <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5 shadow-sm">
@@ -219,6 +255,8 @@ export default function RelatoriosPage() {
               </Button>
             </div>
           </form>
+          {erroDespesa && <p role="alert" className="text-sm text-destructive">{erroDespesa}</p>}
+          {sucessoDespesa && <p role="status" className="text-sm text-accent">{sucessoDespesa}</p>}
 
           {despesasFiltradas.length > 0 ? (
             <ul className="flex flex-col gap-2">
